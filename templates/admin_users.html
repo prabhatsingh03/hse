@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSE User Management</title>
+    <link rel="icon" href="https://www.simonindia.com/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-blue-900 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="https://simonindia.com/assets/images/logo.png" alt="SIMON India Logo" class="h-8">
+                <h1 class="text-xl font-bold">User Management</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/admin/dashboard" class="bg-blue-700 px-3 py-2 rounded hover:bg-blue-600 transition">Back to Dashboard</a>
+                <form id="logout-form" class="inline">
+                    <button type="submit" class="bg-red-600 px-3 py-2 rounded hover:bg-red-500 transition">
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">User Management</h2>
+            <button id="add-user-btn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition">
+                Add New User
+            </button>
+        </div>
+
+        <div id="message-area" class="mb-4"></div>
+
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Add/Edit User -->
+    <div id="user-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-lg mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-lg font-semibold text-gray-900">Add New User</h3>
+                <button id="close-modal" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="user-form" class="space-y-4">
+                <input type="hidden" id="user-id">
+
+                <div>
+                    <label for="full_name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    <input type="text" id="full_name" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="email" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                        <input type="text" id="username" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                        <select id="role" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select role</option>
+                            <option value="safety_officer">Safety Officer</option>
+                            <option value="project_manager">Project Manager</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="designation" class="block text-sm font-medium text-gray-700 mb-1">Designation (optional)</label>
+                        <input type="text" id="designation"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <p id="password-hint" class="mt-1 text-xs text-gray-500 hidden">
+                        Leave blank to keep current password.
+                    </p>
+                </div>
+
+                <div class="flex justify-end space-x-4 mt-4">
+                    <button type="button" id="cancel-btn"
+                            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Save User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let csrfToken = null;
+        let isEditing = false;
+
+        function showMessage(message, type = 'success') {
+            const messageArea = document.getElementById('message-area');
+            const bgColor = type === 'success'
+                ? 'bg-green-100 text-green-700 border-green-300'
+                : 'bg-red-100 text-red-700 border-red-300';
+            messageArea.innerHTML =
+                `<div class="p-3 rounded-md border ${bgColor}">${message}</div>`;
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        async function fetchCsrfToken() {
+            try {
+                const res = await fetch('/api/auth/csrf-token');
+                const data = await res.json();
+                csrfToken = data.csrf_token;
+            } catch (e) {
+                console.error('Failed to fetch CSRF token', e);
+            }
+        }
+
+        function roleBadge(role) {
+            if (role === 'safety_officer') {
+                return '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Safety Officer</span>';
+            }
+            if (role === 'project_manager') {
+                return '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Project Manager</span>';
+            }
+            return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">${role}</span>`;
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch('/api/admin/users');
+                if (!res.ok) {
+                    throw new Error('Failed to load users');
+                }
+                const users = await res.json();
+                const tbody = document.getElementById('users-table-body');
+                tbody.innerHTML = '';
+                users.forEach(user => {
+                    const tr = document.createElement('tr');
+                    const safeName = (user.full_name || '').replace(/'/g, "\\'");
+                    const safeEmail = (user.email || '').replace(/'/g, "\\'");
+                    const safeUsername = (user.username || '').replace(/'/g, "\\'");
+                    const safeDesignation = (user.designation || '').replace(/'/g, "\\'");
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.full_name || ''}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.email || ''}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.username || ''}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${roleBadge(user.role)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.designation || ''}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                            <button class="text-indigo-600 hover:text-indigo-900 mr-4"
+                                    onclick="editUser(${user.id}, '${safeName}', '${safeEmail}', '${safeUsername}', '${user.role}', '${safeDesignation}')">
+                                Edit
+                            </button>
+                            <button class="text-red-600 hover:text-red-900"
+                                    onclick="deleteUser(${user.id})">
+                                Delete
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (e) {
+                console.error(e);
+                showMessage('Failed to load users', 'error');
+            }
+        }
+
+        function showModal() {
+            document.getElementById('user-modal').classList.remove('hidden');
+        }
+
+        function hideModal() {
+            document.getElementById('user-modal').classList.add('hidden');
+            document.getElementById('user-form').reset();
+            document.getElementById('user-id').value = '';
+            isEditing = false;
+            document.getElementById('modal-title').textContent = 'Add New User';
+            document.getElementById('password-hint').classList.add('hidden');
+        }
+
+        function editUser(id, fullName, email, username, role, designation) {
+            isEditing = true;
+            document.getElementById('modal-title').textContent = 'Edit User';
+            document.getElementById('user-id').value = id;
+            document.getElementById('full_name').value = fullName;
+            document.getElementById('email').value = email;
+            document.getElementById('username').value = username;
+            document.getElementById('role').value = role;
+            document.getElementById('designation').value = designation;
+            document.getElementById('password').value = '';
+            document.getElementById('password-hint').classList.remove('hidden');
+            showModal();
+        }
+
+        async function deleteUser(id) {
+            if (!confirm('Are you sure you want to delete this user?')) return;
+            try {
+                if (!csrfToken) {
+                    await fetchCsrfToken();
+                }
+                const res = await fetch(`/api/admin/users/delete/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-Token': csrfToken || ''
+                    }
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showMessage(result.message || 'User deleted successfully');
+                    setTimeout(loadUsers, 1000);
+                } else {
+                    showMessage(result.message || 'Delete failed', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('Error deleting user', 'error');
+            }
+        }
+
+        async function submitUser(event) {
+            event.preventDefault();
+            const id = document.getElementById('user-id').value;
+            const full_name = document.getElementById('full_name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const role = document.getElementById('role').value;
+            const designation = document.getElementById('designation').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!full_name || !email || !username || !role || (!isEditing && !password)) {
+                showMessage('Full name, email, username, role and password (for new users) are required', 'error');
+                return;
+            }
+
+            const payload = {
+                full_name,
+                email,
+                username,
+                role,
+                designation,
+                password: password || null
+            };
+
+            const url = id
+                ? `/api/admin/users/update/${id}`
+                : '/api/admin/users/add';
+
+            try {
+                if (!csrfToken) {
+                    await fetchCsrfToken();
+                }
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken || ''
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    hideModal();
+                    showMessage(result.message || 'User saved successfully');
+                    setTimeout(loadUsers, 1000);
+                } else {
+                    showMessage(result.message || 'Save failed', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('Error saving user', 'error');
+            }
+        }
+
+        async function handleLogout(event) {
+            event.preventDefault();
+            try {
+                if (!csrfToken) {
+                    await fetchCsrfToken();
+                }
+                const res = await fetch('/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken || ''
+                    },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = '/login';
+                } else {
+                    showMessage(data.message || 'Logout failed', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('Logout request failed', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchCsrfToken();
+            await loadUsers();
+
+            document.getElementById('add-user-btn').addEventListener('click', () => {
+                isEditing = false;
+                document.getElementById('modal-title').textContent = 'Add New User';
+                document.getElementById('password-hint').classList.add('hidden');
+                document.getElementById('password').value = '';
+                showModal();
+            });
+
+            document.getElementById('close-modal').addEventListener('click', hideModal);
+            document.getElementById('cancel-btn').addEventListener('click', hideModal);
+
+            document.getElementById('user-modal').addEventListener('click', (e) => {
+                if (e.target === document.getElementById('user-modal')) {
+                    hideModal();
+                }
+            });
+
+            document.getElementById('user-form').addEventListener('submit', submitUser);
+
+            const logoutForm = document.getElementById('logout-form');
+            logoutForm.addEventListener('submit', handleLogout);
+        });
+    </script>
+</body>
+</html>
+
+

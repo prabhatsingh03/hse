@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="https://www.simonindia.com/favicon.ico">
+    <title>HSE Report PDF</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            color: #111827;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .logo {
+            max-width: 60px;
+            height: auto;
+            margin-bottom: 2px;
+        }
+
+        .title-block {
+            padding: 10px 15px;
+            border-radius: 6px;
+            color: #ffffff;
+            /* Use solid color instead of gradient for better xhtml2pdf compatibility */
+            background-color: #2563eb;
+            margin: 0 10px;
+        }
+
+        .title-block h1 {
+            font-size: 14px;
+            margin: 0 0 2px 0;
+            text-transform: uppercase;
+        }
+
+        .title-block h2 {
+            font-size: 12px;
+            margin: 0;
+            font-weight: normal;
+        }
+
+        .meta-table,
+        .metrics-table,
+        .monitoring-table,
+        .compliance-table,
+        .sign-table,
+        .footer-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+        }
+
+        .meta-table th,
+        .meta-table td,
+        .metrics-table th,
+        .metrics-table td,
+        .monitoring-table th,
+        .monitoring-table td,
+        .compliance-table th,
+        .compliance-table td,
+        .sign-table th,
+        .sign-table td,
+        .footer-table td {
+            border: 1px solid #d1d5db;
+            padding: 4px 6px;
+            vertical-align: top;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        /* Override for metadata table specifically */
+        .meta-table th,
+        .meta-table td {
+            padding: 12px 8px;
+            vertical-align: middle;
+        }
+
+        .meta-label {
+            width: 15%;
+            background-color: #f9fafb;
+            font-weight: bold;
+            word-wrap: break-word;
+            font-size: 10px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        .section-title {
+            margin-top: 10px;
+            margin-bottom: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #111827;
+        }
+
+        .monitoring-table th {
+            background-color: #f3f4f6;
+            font-size: 11px;
+        }
+
+        .monitoring-table td {
+            font-size: 10px;
+        }
+
+        .col-sno {
+            width: 60px;
+            text-align: center;
+        }
+
+        .col-current,
+        .col-cumulative {
+            width: 120px;
+            text-align: right;
+        }
+
+        .row-alt {
+            background-color: #f9fafb;
+        }
+
+        .row-lti {
+            background-color: #fef2f2;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .badge-ok {
+            color: #166534;
+            font-weight: bold;
+        }
+
+        .badge-warn {
+            color: #ca8a04;
+            font-weight: bold;
+        }
+
+        .badge-critical {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+
+        .yes {
+            color: #15803d;
+            font-weight: bold;
+        }
+
+        .no {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+
+        .muted {
+            color: #6b7280;
+            font-size: 9px;
+        }
+
+        .summary-box {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        .summary-box td {
+            border: 1px solid #d1d5db;
+            padding: 6px 8px;
+            vertical-align: top;
+        }
+
+        .summary-label {
+            font-size: 10px;
+            color: #4b5563;
+            text-transform: uppercase;
+        }
+
+        .summary-value {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .signature-name {
+            font-weight: bold;
+        }
+
+        .signature-meta {
+            font-size: 9px;
+            color: #4b5563;
+        }
+
+        .signature-box {
+            height: 40px;
+            border: 1px dashed #d1d5db;
+            text-align: center;
+            font-size: 9px;
+            color: #6b7280;
+            padding-top: 10px;
+        }
+
+        .footer-text {
+            font-size: 9px;
+            color: #6b7280;
+        }
+
+        .company-name {
+            font-weight: bold;
+        }
+
+        .meta-table {
+            table-layout: auto;
+            width: 100%;
+        }
+
+        /* Fix metadata wrapping for PDF renderer (xhtml2pdf): prevent overflow / weird column stretching */
+        .meta-table th,
+        .meta-table td {
+            white-space: normal;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            line-height: 1.3;
+            min-width: 0;
+            max-width: none;
+        }
+        
+        /* Ensure proper spacing and prevent content overflow */
+        .meta-table td {
+            padding: 12px 8px;
+            vertical-align: middle;
+            height: 35px;
+            min-height: 35px;
+        }
+
+        .meta-value {
+            white-space: normal;
+            font-size: 10px;
+            display: block;
+            line-height: 1.4;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            max-width: 100%;
+            hyphens: auto;
+            margin: 0;
+            padding: 2px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <!-- xhtml2pdf cannot use Flask URL routes; use absolute filesystem paths passed from the view -->
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
+            <tr>
+                <td style="text-align: left; width: 15%; vertical-align: middle;">
+                    {% if logo_path %}
+                    <img class="logo" src="{{ logo_path }}" alt="Simon India Limited">
+                    {% endif %}
+                </td>
+                <td style="text-align: center; width: 70%; vertical-align: middle;">
+                    <div class="title-block">
+                        <h1>Simon India Limited</h1>
+                        <h2>MONTHLY HEALTH, SAFETY &amp; ENVIRONMENTAL (HSE) REPORT</h2>
+                    </div>
+                </td>
+                <td style="text-align: right; width: 15%; vertical-align: middle;">
+                    {% if adventz_logo_path %}
+                    <img class="logo" src="{{ adventz_logo_path }}" alt="Adventz">
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Report metadata -->
+    <table class="meta-table" width="100%">
+        <tr>
+            <td class="meta-label" width="15%">Report Number</td>
+            <td width="35%"><span class="meta-value">{{ report.report_number or '-' }}</span></td>
+            <td class="meta-label" width="15%">Month / Year</td>
+            <td width="35%"><span class="meta-value">{{ report.month }} {{ report.year }}</span></td>
+        </tr>
+
+        <tr>
+            <td class="meta-label">Name of Work</td>
+            <td><span class="meta-value">{{ report.name_of_work or '-' }}</span></td>
+            <td class="meta-label">Contractor Name</td>
+            <td><span class="meta-value">{{ report.contractor_name or '-' }}</span></td>
+        </tr>
+
+        <tr>
+            <td class="meta-label">Status Date</td>
+            <td><span class="meta-value">{{ report.status_date or '-' }}</span></td>
+            <td class="meta-label"></td>
+            <td></td>
+        </tr>
+
+        <tr>
+            <td class="meta-label">Prepared By</td>
+            <td><span class="meta-value">{{ prepared_by.full_name if prepared_by else '-' }}</span></td>
+            <td class="meta-label">Approved By</td>
+            <td><span class="meta-value">{{ approved_by.full_name if approved_by else '-' }}</span></td>
+        </tr>
+    </table>
+
+
+    <!-- Summary metrics -->
+    {% set data = report.report_data or {} %}
+    {% set safe_manhours = (data.safe_manhours.cumulative if data.safe_manhours is defined and
+    data.safe_manhours.cumulative is defined else 0) %}
+    {% set total_lti = (
+    (data.fatalities.cumulative if data.fatalities is defined and data.fatalities.cumulative is defined else 0)
+    +
+    (data.other_lti.cumulative if data.other_lti is defined and data.other_lti.cumulative is defined else 0)
+    ) %}
+    {% set freq_rate = (data.frequency_rate.current if data.frequency_rate is defined and data.frequency_rate.current is
+    defined else 0) %}
+    {% set sev_rate = (data.severity_rate.current if data.severity_rate is defined and data.severity_rate.current is
+    defined else 0) %}
+    {% set pending_ncs = (data.pending_ncs.current if data.pending_ncs is defined and data.pending_ncs.current is
+    defined else 0) %}
+
+    {% set lti_class = 'badge-ok' if total_lti == 0 else 'badge-critical' %}
+    {% set ncs_class = 'badge-ok' if pending_ncs == 0 else ('badge-warn' if pending_ncs <= 5 else 'badge-critical' ) %}
+        <table class="summary-box">
+        <tr>
+            <td>
+                <div class="summary-label">Total Safe Man-hours</div>
+                <div class="summary-value">{{ safe_manhours | default(0) }}</div>
+                <div class="muted">Cumulative</div>
+            </td>
+            <td>
+                <div class="summary-label">LTI Count</div>
+                <div class="summary-value {{ lti_class }}">{{ total_lti }}</div>
+                <div class="muted">
+                    {% if total_lti == 0 %}
+                    No Loss Time Injuries reported.
+                    {% else %}
+                    LTI incidents recorded - investigate root causes.
+                    {% endif %}
+                </div>
+            </td>
+            <td>
+                <div class="summary-label">Frequency Rate</div>
+                <div class="summary-value">{{ freq_rate }}</div>
+                <div class="muted">Per 10 lakh man-hours</div>
+            </td>
+            <td>
+                <div class="summary-label">Severity Rate</div>
+                <div class="summary-value">{{ sev_rate }}</div>
+                <div class="muted">Per 10 lakh man-hours</div>
+            </td>
+            <td>
+                <div class="summary-label">Pending NCs</div>
+                <div class="summary-value {{ ncs_class }}">{{ pending_ncs }}</div>
+                <div class="muted">
+                    {% if pending_ncs == 0 %}
+                    All non-conformities closed.
+                    {% elif pending_ncs <= 5 %} Some NCs pending. Monitor for timely closure. {% else %} High number of
+                        pending NCs. Immediate attention required. {% endif %} </div>
+            </td>
+        </tr>
+        </table>
+
+        <!-- Monitoring Parameters Table -->
+        <div class="section-title">Section 1: HSE Monitoring Parameters</div>
+        <table class="monitoring-table">
+            <thead>
+                <tr>
+                    <th class="col-sno">S.No</th>
+                    <th>Monitoring Parameters</th>
+                    <th class="col-current">Current Period</th>
+                    <th class="col-cumulative">Cumulative</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% macro num_row(sno, label, key, alt=false) %}
+                {% set item = data[key] if data[key] is defined else {} %}
+                {% set cur = item.current if item.current is defined else '-' %}
+                {% set cum = item.cumulative if item.cumulative is defined else '-' %}
+                <tr class="{{ 'row-alt' if alt else '' }}">
+                    <td class="col-sno">{{ sno }}</td>
+                    <td>{{ label }}</td>
+                    <td class="col-current">{{ cur }}</td>
+                    <td class="col-cumulative">{{ cum }}</td>
+                </tr>
+                {% endmacro %}
+
+                {{ num_row('1', 'Average number of Staff & Workmen (average daily headcount, not man days)',
+                'staff_workmen') }}
+                {{ num_row('2', 'Total Safe Man-hours worked', 'safe_manhours', true) }}
+                {{ num_row('3', 'Number of Induction programmes conducted', 'induction') }}
+                {{ num_row('4', 'Number of HSE meetings organized at site', 'hse_meetings', true) }}
+                {{ num_row('5', 'Number of HSE awareness programmes conducted at site', 'hse_awareness') }}
+                {{ num_row('6', 'Number of Tool Box Talks conducted', 'toolbox_talks', true) }}
+
+                <!-- Row 7: LTI with sub-rows -->
+                <tr class="row-lti">
+                    <td class="col-sno" rowspan="2">7</td>
+                    <td>
+                        <strong>Number of Loss Time Injuries (LTI) - Fatalities</strong>
+                    </td>
+                    {% set fat = data.fatalities if data.fatalities is defined else {} %}
+                    <td class="col-current">{{ fat.current if fat.current is defined else '-' }}</td>
+                    <td class="col-cumulative">{{ fat.cumulative if fat.cumulative is defined else '-' }}</td>
+                </tr>
+                <tr class="row-lti">
+                    <td>
+                        <strong>Number of Loss Time Injuries (LTI) - Other LTI</strong>
+                    </td>
+                    {% set other = data.other_lti if data.other_lti is defined else {} %}
+                    <td class="col-current">{{ other.current if other.current is defined else '-' }}</td>
+                    <td class="col-cumulative">{{ other.cumulative if other.cumulative is defined else '-' }}</td>
+                </tr>
+
+                {{ num_row('8', 'Number of Non disabling injury (Non-LTI)', 'non_disabling') }}
+                {{ num_row('9', 'Number of First Aid Cases', 'first_aid', true) }}
+                {{ num_row('10', 'Number of Near Miss Incidents', 'near_miss') }}
+                {{ num_row('11', 'Number of Dangerous Occurrences', 'dangerous_occurrences', true) }}
+                {{ num_row('12', 'No. of unsafe acts/ practices detected', 'unsafe_acts') }}
+                {{ num_row('13', 'No. of disciplinary actions taken against staff/ workmen', 'disciplinary_actions',
+                true) }}
+                {{ num_row('14', 'Man-days lost due to injury', 'mandays_lost') }}
+                {{ num_row('15', 'LTI Free man-hours i.e. LTI free man-hours counted from the Last LTI', 'lti_free',
+                true) }}
+                {{ num_row('16', 'Frequency Rate (No. of reportable LTI per 10 lacs man-hours worked)',
+                'frequency_rate') }}
+                {{ num_row('17', 'Severity Rate (No. of man days lost due to LTI per 10 lacs man-hours worked)',
+                'severity_rate', true) }}
+                {{ num_row('18', 'No. of activities for which (JSA) HIRA Completed', 'jsa_hira') }}
+                {{ num_row('19', 'No. of incentives/ awards given', 'incentives', true) }}
+                {{ num_row('20', 'No. of occasions on which penalty imposed by SIL/ Owner', 'penalty') }}
+                {{ num_row('21', 'No. of Audits conducted', 'audits', true) }}
+                {{ num_row('22', 'No. of pending NCs in above Audits', 'pending_ncs') }}
+                {{ num_row('23', 'Compensation cases raised with Insurance', 'compensation_raised', true) }}
+                {{ num_row('24', 'Compensation cases resolved and paid to workmen', 'compensation_resolved') }}
+                {{ num_row('25', 'No. of Vehicular Accident cases', 'vehicular_accidents', true) }}
+                {{ num_row('26', 'No. of fire/Explosion cases', 'fire_explosion') }}
+            </tbody>
+        </table>
+
+        <!-- Compliance (Yes/No) Section -->
+        <div class="section-title">Section 2: Compliance Checklist</div>
+        <table class="compliance-table">
+            <thead>
+                <tr>
+                    <th class="col-sno">S.No</th>
+                    <th>Compliance Parameter</th>
+                    <th class="text-center">Current Status</th>
+                    <th class="text-center">Cumulative / Overall</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% macro comp_row(sno, label, key) %}
+                {% set item = data[key] if data[key] is defined else {} %}
+                {% set cur = item.current if item.current is defined else '-' %}
+                {% set cum = item.cumulative if item.cumulative is defined else '-' %}
+                {% set cur_yes = (cur|string).lower() == 'yes' %}
+                {% set cum_yes = (cum|string).lower() == 'yes' %}
+                <tr>
+                    <td class="col-sno">{{ sno }}</td>
+                    <td>{{ label }}</td>
+                    <td class="text-center">
+                        {% if cur == '-' %}
+                        <span class="muted">-</span>
+                        {% else %}
+                        <span class="{{ 'yes' if cur_yes else 'no' }}">
+                            {{ '✓ Yes' if cur_yes else '✗ No' }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if cum == '-' %}
+                        <span class="muted">-</span>
+                        {% else %}
+                        <span class="{{ 'yes' if cum_yes else 'no' }}">
+                            {{ '✓ Yes' if cum_yes else '✗ No' }}
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endmacro %}
+
+                {{ comp_row('27', 'Whether workmen compensation policy taken', 'workmen_compensation') }}
+                {{ comp_row('28', 'Whether workmen compensation policy is valid', 'compensation_valid') }}
+                {{ comp_row('29', 'Whether workmen registered under ESI Act, as applicable', 'esi_registered') }}
+                {{ comp_row('30', 'Whether HIRAC Register prepared and updated', 'hirac_register') }}
+                {{ comp_row('31', 'Whether Environment Aspect Impact Register prepared and updated',
+                'environment_register') }}
+                {{ comp_row('32', 'Whether Legal Register prepared and updated', 'legal_register') }}
+            </tbody>
+        </table>
+
+        <!-- Safety Officer Remarks Section (only if remarks exist) -->
+        {% if report.remarks %}
+        <div class="section-title">Section 3: Safety Officer Remarks</div>
+        <table class="monitoring-table">
+            <tr>
+                <td style="padding: 10px; background-color: #f0fdfa; border: 1px solid #99f6e4; font-size: 10px; line-height: 1.5;">
+                    {{ report.remarks }}
+                </td>
+            </tr>
+        </table>
+        {% endif %}
+
+        <!-- Signatures Section -->
+        <div class="section-title">Section {% if report.remarks %}4{% else %}3{% endif %}: Signatures &amp; Approval</div>
+        <table class="sign-table">
+            <tr>
+                <th style="width: 50%;">Prepared By</th>
+                <th style="width: 50%;">Approved By</th>
+            </tr>
+            <tr>
+                <td>
+                    <div class="signature-name">
+                        {% if prepared_by %}
+                        {{ prepared_by.full_name or prepared_by.username or '-' }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                    <div class="signature-meta">
+                        {% if prepared_by and prepared_by.email %}
+                        Email: {{ prepared_by.email }}
+                        {% else %}
+                        Email: -
+                        {% endif %}
+                    </div>
+                    <div class="signature-meta">
+                        Submission Date:
+                        {% if report.created_at %}
+                        {{ report.created_at }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                    <div class="signature-box">
+                        Digitally Signed{% if report.created_at %} on {{ report.created_at }}{% endif %}
+                    </div>
+                </td>
+                <td>
+                    <div class="signature-name">
+                        {% if approved_by %}
+                        {{ approved_by.full_name or approved_by.username or '-' }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                    <div class="signature-meta">
+                        {% if approved_by and approved_by.email %}
+                        Email: {{ approved_by.email }}
+                        {% else %}
+                        Email: -
+                        {% endif %}
+                    </div>
+                    <div class="signature-meta">
+                        Approval Date:
+                        {% if report.updated_at %}
+                        {{ report.updated_at }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                    <div class="signature-box">
+                        Digitally Signed{% if report.updated_at %} on {{ report.updated_at }}{% endif %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Footer -->
+        <table class="footer-table" style="margin-top: 8px;">
+            <tr>
+                <td class="footer-text" style="width: 40%;">
+                    <span class="company-name">Simon India Limited</span><br>
+                    8th Floor, Tower A, Global Business Park<br>
+                    Gurugram, Haryana - 122002, India
+                </td>
+                <td class="footer-text" style="width: 35%;">
+                    Phone: +91-124 451 8500<br>
+                    Website: www.simonindia.com
+                </td>
+                <td class="footer-text" style="width: 25%; text-align: right;">
+                    Generated on
+                    {% if generated_at %}
+                    {{ generated_at.strftime('%d-%b-%Y %H:%M') }}
+                    {% else %}
+                    -
+                    {% endif %}<br>
+                    <span class="muted">This is a system-generated report.</span>
+                </td>
+            </tr>
+        </table>
+
+</body>
+
+</html>

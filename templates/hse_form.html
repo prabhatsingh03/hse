@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly HSE Report Form</title>
+    <link rel="icon" href="https://www.simonindia.com/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div class="bg-white shadow-md">
+    <div class="max-w-6xl mx-auto flex items-center justify-between py-4 px-4">
+        <div class="flex items-center space-x-3">
+            <img src="{{ url_for('static', filename='images/simonindia_logo.png') }}" alt="Simon India Limited" class="w-24 h-auto">
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">Simon India Limited</h1>
+                <p class="text-sm text-gray-500">Monthly Health, Safety &amp; Environmental (HSE) Report</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-6 text-sm">
+            <div class="text-right">
+                <p class="font-semibold text-gray-800">{{ user.full_name }}</p>
+                <p class="text-gray-500">{{ user.email }}</p>
+            </div>
+            <nav class="flex items-center space-x-3">
+                <a href="/safety_officer/dashboard" class="text-blue-600 hover:text-blue-800 font-medium">Dashboard</a>
+                <form id="logoutForm" class="inline-block">
+                    <button type="button" id="logoutBtn" class="px-3 py-1.5 rounded-md bg-red-500 text-white text-xs font-semibold hover:bg-red-600">
+                        Logout
+                    </button>
+                </form>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<main class="p-4">
+    <form id="hseForm" class="bg-white p-4 rounded shadow text-sm max-w-6xl mx-auto">
+        <!-- Month Warning Message (Top) -->
+        <div id="monthWarningMessage" class="mb-4" style="display: none;"></div>
+        
+        <!-- Basic Details -->
+        <div class="bg-blue-50 p-6 rounded-lg border-l-4 border-blue-500 mb-6">
+            <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+                <span class="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">1</span>
+                Basic Report Information
+            </h3>
+            <div class="grid grid-cols-2 gap-6">
+                <div class="form-group">
+                    <label class="form-label required">Name of Work</label>
+                    <select id="name_of_work" class="form-input" required>
+                        <option value="">Select Name of Work</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">For the Month</label>
+                    <input type="month" id="report_month" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Report No</label>
+                    <input type="text" id="report_number" class="form-input bg-gray-100" placeholder="Will be generated from month/year" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label required">Name of Contractor</label>
+                    <select id="contractor_name" class="form-input" required>
+                        <option value="">Select Contractor</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Status as on</label>
+                    <input type="date" id="status_date" class="form-input" required>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monitoring Parameters Table -->
+        <div class="bg-purple-50 p-6 rounded-lg border-l-4 border-purple-500 mb-6">
+            <h3 class="text-lg font-semibold text-purple-800 mb-4 flex items-center">
+                <span class="bg-purple-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">2</span>
+                HSE Monitoring Parameters
+            </h3>
+            <p class="text-sm text-purple-700 mb-4">
+                Enter current period values. Cumulative values will be auto-calculated based on the previous approved month's report.
+            </p>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse border border-gray-300 text-sm shadow-lg rounded-lg overflow-hidden">
+                <thead>
+                <tr class="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+                    <th class="border border-gray-300 p-4 w-16 font-semibold">S.No</th>
+                    <th class="border border-gray-300 p-4 text-left font-semibold">Monitoring Parameters</th>
+                    <th class="border border-gray-300 p-4 w-32 font-semibold">Current Period</th>
+                    <th class="border border-gray-300 p-4 w-32 font-semibold">CUMULATIVE</th>
+                </tr>
+                </thead>
+                <tbody>
+                <!-- Row 1 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">1</td>
+                    <td class="border border-gray-300 p-3">
+                        <div class="font-medium text-gray-800">Average number of Staff &amp; Workmen</div>
+                        <div class="text-sm text-gray-600 mt-1">(average daily headcount, not man days)</div>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="staff_workmen" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="staff_workmen" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- Row 2 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">2</td>
+                    <td class="border border-gray-300 p-3">
+                        <div class="font-medium text-gray-800">Total Safe Man-hours worked</div>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="safe_manhours" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="safe_manhours" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- Row 3 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">3</td>
+                    <td class="border border-gray-300 p-3">
+                        <div class="font-medium text-gray-800">Number of Induction programmes conducted</div>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="induction" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="induction" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- Row 4 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">4</td>
+                    <td class="border border-gray-300 p-3">
+                        <div class="font-medium text-gray-800">Number of HSE meetings organized at site</div>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="hse_meetings" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="hse_meetings" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- Row 5 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">5</td>
+                    <td class="border border-gray-300 p-3">
+                        <div class="font-medium text-gray-800">Number of HSE awareness programmes conducted at site</div>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="hse_awareness" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="hse_awareness" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- Row 6 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">6</td>
+                    <td class="border border-gray-300 p-3">Number of Tool Box Talks conducted</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="toolbox_talks" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="toolbox_talks" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- Row 7 - LTI with subcategories -->
+                <tr class="hover:bg-red-50 transition-colors bg-red-25">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-red-100">7</td>
+                    <td class="border border-gray-300 p-3">
+                        <div class="font-medium text-red-800">Number of Loss Time Injuries (LTI)</div>
+                        <div class="mt-3 space-y-2">
+                            <div class="text-sm font-medium text-red-700">Fatalities</div>
+                            <div class="text-sm font-medium text-red-700">Other LTI</div>
+                        </div>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <div class="mb-3">
+                            <input type="number" class="table-input" data-param="fatalities" data-type="current" min="0">
+                        </div>
+                        <div>
+                            <input type="number" class="table-input" data-param="other_lti" data-type="current" min="0">
+                        </div>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <div class="mb-3">
+                            <input type="number" class="table-input bg-gray-100" data-param="fatalities" data-type="cumulative" min="0" readonly>
+                        </div>
+                        <div>
+                            <input type="number" class="table-input bg-gray-100" data-param="other_lti" data-type="cumulative" min="0" readonly>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Rows 8-26 numeric -->
+                <!-- 8 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">8</td>
+                    <td class="border border-gray-300 p-3">Number of Non disabling injury (Non-LTI)</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="non_disabling" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="non_disabling" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 9 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">9</td>
+                    <td class="border border-gray-300 p-3">Number of First Aid Cases</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="first_aid" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="first_aid" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 10 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">10</td>
+                    <td class="border border-gray-300 p-3">Number of Near Miss Incidents</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="near_miss" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="near_miss" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 11 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">11</td>
+                    <td class="border border-gray-300 p-3">Number of Dangerous Occurrences</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="dangerous_occurrences" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="dangerous_occurrences" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 12 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">12</td>
+                    <td class="border border-gray-300 p-3">No. of unsafe acts/ practices detected</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="unsafe_acts" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="unsafe_acts" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 13 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">13</td>
+                    <td class="border border-gray-300 p-3">No. of disciplinary actions taken against staff/ workmen</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="disciplinary_actions" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="disciplinary_actions" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 14 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">14</td>
+                    <td class="border border-gray-300 p-3">Man-days lost due to injury</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="mandays_lost" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="mandays_lost" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 15 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">15</td>
+                    <td class="border border-gray-300 p-3">LTI Free man-hours i.e. LTI free man-hours counted from the Last LTI</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="lti_free" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="lti_free" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 16 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">16</td>
+                    <td class="border border-gray-300 p-3">Frequency Rate (No. of reportable LTI per 10 lacs man-hours worked)</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" step="0.01" class="table-input" data-param="frequency_rate" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" step="0.01" class="table-input bg-gray-100" data-param="frequency_rate" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 17 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">17</td>
+                    <td class="border border-gray-300 p-3">Severity Rate (No. of man days lost due to LTI per 10 lacs man-hours worked)</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" step="0.01" class="table-input" data-param="severity_rate" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" step="0.01" class="table-input bg-gray-100" data-param="severity_rate" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 18 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">18</td>
+                    <td class="border border-gray-300 p-3">No. of activities for which (JSA) HIRA Completed</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="jsa_hira" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="jsa_hira" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 19 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">19</td>
+                    <td class="border border-gray-300 p-3">No. of incentives/ awards given</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="incentives" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="incentives" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 20 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">20</td>
+                    <td class="border border-gray-300 p-3">No. of occasions on which penalty imposed by SIL/ Owner</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="penalty" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="penalty" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 21 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">21</td>
+                    <td class="border border-gray-300 p-3">No. of Audits conducted</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="audits" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="audits" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 22 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">22</td>
+                    <td class="border border-gray-300 p-3">No. of pending NCs in above Audits</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="pending_ncs" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="pending_ncs" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 23 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">23</td>
+                    <td class="border border-gray-300 p-3">Compensation cases raised with Insurance</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="compensation_raised" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="compensation_raised" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 24 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">24</td>
+                    <td class="border border-gray-300 p-3">Compensation cases resolved and paid to workmen</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="compensation_resolved" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="compensation_resolved" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 25 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">25</td>
+                    <td class="border border-gray-300 p-3">No. of Vehicular Accident cases</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="vehicular_accidents" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="vehicular_accidents" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+                <!-- 26 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">26</td>
+                    <td class="border border-gray-300 p-3">No. of fire/Explosion cases</td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input" data-param="fire_explosion" data-type="current" min="0">
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <input type="number" class="table-input bg-gray-100" data-param="fire_explosion" data-type="cumulative" readonly>
+                    </td>
+                </tr>
+
+                <!-- Compliance Yes/No Rows 27-32 -->
+                <tr class="hover:bg-yellow-50 transition-colors bg-yellow-25">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-yellow-100">27</td>
+                    <td class="border border-gray-300 p-3">
+                        <div class="font-medium text-yellow-800">Whether workmen compensation policy taken</div>
+                        <div class="text-sm text-yellow-700 mt-1">Compliance Requirement</div>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input" data-param="workmen_compensation" data-type="current" required>
+                            <option value="">Select Option</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input bg-gray-100" data-param="workmen_compensation" data-type="cumulative" disabled>
+                            <option value="">Select Option</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                </tr>
+                <!-- 28 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">28</td>
+                    <td class="border border-gray-300 p-3">Whether workmen compensation policy is valid</td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input" data-param="compensation_valid" data-type="current">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input bg-gray-100" data-param="compensation_valid" data-type="cumulative" disabled>
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                </tr>
+                <!-- 29 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">29</td>
+                    <td class="border border-gray-300 p-3">Whether workmen registered under ESI Act, as applicable</td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input" data-param="esi_registered" data-type="current">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input bg-gray-100" data-param="esi_registered" data-type="cumulative" disabled>
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                </tr>
+                <!-- 30 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">30</td>
+                    <td class="border border-gray-300 p-3">Whether HIRAC Register prepared and updated</td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input" data-param="hirac_register" data-type="current">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input bg-gray-100" data-param="hirac_register" data-type="cumulative" disabled>
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                </tr>
+                <!-- 31 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">31</td>
+                    <td class="border border-gray-300 p-3">Whether Environment Aspect Impact Register prepared and updated</td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input" data-param="environment_register" data-type="current">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input bg-gray-100" data-param="environment_register" data-type="cumulative" disabled>
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                </tr>
+                <!-- 32 -->
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="border border-gray-300 p-3 text-center font-semibold bg-gray-50">32</td>
+                    <td class="border border-gray-300 p-3">Whether Legal Register prepared and updated</td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input" data-param="legal_register" data-type="current">
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                    <td class="border border-gray-300 p-2">
+                        <select class="table-input bg-gray-100" data-param="legal_register" data-type="cumulative" disabled>
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Remarks Section (Optional) -->
+        <div class="bg-teal-50 p-6 rounded-lg border-l-4 border-teal-500 mt-6">
+            <h3 class="text-lg font-semibold text-teal-800 mb-4 flex items-center">
+                <span class="bg-teal-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">3</span>
+                Safety Officer Remarks
+                <span class="ml-2 text-sm font-normal text-teal-600">(Optional)</span>
+            </h3>
+            <div class="form-group">
+                <label class="form-label">Remarks / Additional Comments</label>
+                <textarea id="remarks" class="form-input" rows="4" 
+                          placeholder="Enter any additional remarks, observations, or comments about this month's HSE report..."
+                          style="resize: vertical; min-height: 100px;"></textarea>
+                <p class="form-help">Use this field to provide any additional context, observations, or notable incidents that occurred during this reporting period.</p>
+            </div>
+        </div>
+
+        <!-- Signatures Section -->
+        <div class="bg-orange-50 p-6 rounded-lg border-l-4 border-orange-500 mt-6">
+            <h3 class="text-lg font-semibold text-orange-800 mb-4 flex items-center">
+                <span class="bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm mr-2">4</span>
+                Signatures &amp; Approval
+            </h3>
+            <div class="grid grid-cols-2 gap-8">
+                <div class="signature-box">
+                    <label class="form-label">Prepared by</label>
+                    <select id="prepared_by_id" class="form-input" disabled>
+                        <option value="">Select Prepared By</option>
+                    </select>
+                </div>
+                <div class="signature-box">
+                    <label class="form-label">Approved by</label>
+                    <select id="approved_by_id" class="form-input" disabled>
+                        <option value="">Select Approved By</option>
+                    </select>
+                    <p class="form-help">Approval will be completed by Project Manager in their workflow.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="text-center mt-8">
+            <button type="button" id="openConfirmBtn" class="submit-button inline-flex items-center justify-center">
+                <span>Review & Submit HSE Report</span>
+            </button>
+            <p class="text-sm text-gray-600 mt-3">Please review all information before submitting</p>
+            <p id="formMessage" class="text-sm mt-2"></p>
+        </div>
+    </form>
+</main>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden mx-4">
+        <!-- Modal Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div>
+                        <h3 class="text-lg font-bold">Confirm Report Submission</h3>
+                        <p class="text-sm text-blue-100">Please review the details before submitting</p>
+                    </div>
+                </div>
+                <button id="closeConfirmModal" class="text-white hover:text-blue-200 text-3xl font-light leading-none">&times;</button>
+            </div>
+        </div>
+        
+        <!-- Modal Content -->
+        <div class="p-6 overflow-y-auto max-h-[60vh]">
+            <!-- Report Summary -->
+            <div class="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-200">
+                <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Report Information</h4>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <p class="text-gray-500 text-xs">Report Number</p>
+                        <p id="confirmReportNumber" class="font-semibold text-gray-800">-</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-xs">Month / Year</p>
+                        <p id="confirmMonthYear" class="font-semibold text-gray-800">-</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-xs">Name of Work</p>
+                        <p id="confirmNameOfWork" class="font-semibold text-gray-800">-</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-xs">Contractor</p>
+                        <p id="confirmContractor" class="font-semibold text-gray-800">-</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-xs">Status Date</p>
+                        <p id="confirmStatusDate" class="font-semibold text-gray-800">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key Metrics Preview -->
+            <div class="bg-blue-50 rounded-xl p-4 mb-4 border border-blue-200">
+                <h4 class="text-sm font-semibold text-blue-700 uppercase tracking-wide mb-3">Key Safety Metrics (Current Period)</h4>
+                <div class="grid grid-cols-3 md:grid-cols-5 gap-3 text-center">
+                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                        <p class="text-xs text-gray-500">Staff & Workmen</p>
+                        <p id="confirmStaffWorkmen" class="text-xl font-bold text-gray-800">0</p>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                        <p class="text-xs text-gray-500">Safe Man-hours</p>
+                        <p id="confirmSafeManhours" class="text-xl font-bold text-blue-600">0</p>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 shadow-sm" id="confirmLtiContainer">
+                        <p class="text-xs text-gray-500">Total LTI</p>
+                        <p id="confirmTotalLti" class="text-xl font-bold">0</p>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                        <p class="text-xs text-gray-500">Near Miss</p>
+                        <p id="confirmNearMiss" class="text-xl font-bold text-yellow-600">0</p>
+                    </div>
+                    <div class="bg-white rounded-lg p-3 shadow-sm">
+                        <p class="text-xs text-gray-500">First Aid Cases</p>
+                        <p id="confirmFirstAid" class="text-xl font-bold text-orange-600">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Remarks Preview (if any) -->
+            <div id="confirmRemarksSection" class="bg-teal-50 rounded-xl p-4 mb-4 border border-teal-200 hidden">
+                <h4 class="text-sm font-semibold text-teal-700 uppercase tracking-wide mb-2">Your Remarks</h4>
+                <p id="confirmRemarks" class="text-sm text-teal-800 whitespace-pre-wrap"></p>
+            </div>
+
+            <!-- Warning Notice -->
+            <div class="bg-amber-50 rounded-xl p-4 border border-amber-200">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-amber-500 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <div>
+                        <p class="text-sm font-semibold text-amber-800">Important Notice</p>
+                        <p class="text-xs text-amber-700 mt-1">Once submitted, this report will be sent to the Project Manager for review. You will only be able to edit the report if it gets rejected.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <button id="cancelConfirmBtn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                ← Go Back & Edit
+            </button>
+            <button id="finalSubmitBtn" class="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-green-500 to-green-600 rounded-lg hover:from-green-600 hover:to-green-700 transition inline-flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+                <span id="finalSubmitBtnText">Confirm & Submit Report</span>
+                <svg id="finalSubmitSpinner" class="w-5 h-5 ml-2 hidden animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8m0 0v4m0-4l-3 3"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-group {
+    margin-bottom: 1rem;
+}
+.form-label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #374151;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.form-label.required::after {
+    content: ' *';
+    color: #ef4444;
+    font-weight: bold;
+}
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease-in-out;
+    background-color: #ffffff;
+}
+.form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+.table-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    text-align: center;
+    font-size: 0.875rem;
+    transition: all 0.2s ease-in-out;
+    background-color: #ffffff;
+}
+.table-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+.form-help {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+.signature-box {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+}
+.submit-button {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    color: white;
+    padding: 0.9rem 2rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.submit-button:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+}
+select.table-input {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+@media (max-width: 768px) {
+    .grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    table {
+        font-size: 0.75rem;
+    }
+}
+</style>
+
+<script>
+(function () {
+    const workSelect = document.getElementById('name_of_work');
+    const contractorSelect = document.getElementById('contractor_name');
+    const preparedBySelect = document.getElementById('prepared_by_id');
+    const approvedBySelect = document.getElementById('approved_by_id');
+    const monthInput = document.getElementById('report_month');
+    const form = document.getElementById('hseForm');
+    const openConfirmBtn = document.getElementById('openConfirmBtn');
+    const formMessage = document.getElementById('formMessage');
+    const monthWarningMessage = document.getElementById('monthWarningMessage');
+    const reportNumberInput = document.getElementById('report_number');
+    
+    // Confirmation modal elements
+    const confirmModal = document.getElementById('confirmModal');
+    const closeConfirmModalBtn = document.getElementById('closeConfirmModal');
+    const cancelConfirmBtn = document.getElementById('cancelConfirmBtn');
+    const finalSubmitBtn = document.getElementById('finalSubmitBtn');
+    const finalSubmitBtnText = document.getElementById('finalSubmitBtnText');
+    const finalSubmitSpinner = document.getElementById('finalSubmitSpinner');
+
+    let previousCumulativeData = {};
+    let isEditMode = false;
+    let editReportId = null;
+    let csrfToken = null;
+    
+    // Get logged-in user info from template
+    const loggedInUser = {
+        full_name: '{{ user.full_name|default("") }}',
+        designation: '{{ user.designation|default("") }}'
+    };
+
+    function setSubmitting(submitting) {
+        finalSubmitBtn.disabled = submitting;
+        finalSubmitSpinner.classList.toggle('hidden', !submitting);
+        finalSubmitBtnText.textContent = submitting ? 'Submitting...' : (isEditMode ? 'Confirm & Resubmit Report' : 'Confirm & Submit Report');
+    }
+
+    async function loadConfig() {
+        try {
+            const res = await fetch('/api/hse/config');
+            if (!res.ok) throw new Error('Failed to load configuration');
+            const config = await res.json();
+
+            let matchedPreparedBy = null;
+            
+            (config.prepared_by || []).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.name} - ${p.designation}`;
+                preparedBySelect.appendChild(opt);
+                
+                // Auto-select if name and designation match logged-in user
+                // Try exact match first, then try name-only match if designation is missing
+                if (loggedInUser.full_name) {
+                    const userNameMatch = p.name.trim().toLowerCase() === loggedInUser.full_name.trim().toLowerCase();
+                    
+                    if (loggedInUser.designation) {
+                        // Both name and designation must match
+                        if (userNameMatch && 
+                            p.designation.trim().toLowerCase() === loggedInUser.designation.trim().toLowerCase()) {
+                            matchedPreparedBy = p.id;
+                        }
+                    } else {
+                        // If user has no designation, match by name only
+                        if (userNameMatch) {
+                            matchedPreparedBy = p.id;
+                        }
+                    }
+                }
+            });
+            
+            // Auto-select the matched prepared_by option (only if not in edit mode)
+            if (matchedPreparedBy && !isEditMode) {
+                preparedBySelect.value = matchedPreparedBy;
+            }
+
+            (config.approved_by || []).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.name} - ${p.designation}`;
+                approvedBySelect.appendChild(opt);
+            });
+
+            // Populate Name of Work dropdown
+            (config.work_names || []).forEach(w => {
+                const opt = document.createElement('option');
+                opt.value = w.work_name;
+                opt.textContent = w.work_name;
+                workSelect.appendChild(opt);
+            });
+
+            (config.contractors || []).forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.contractor_name;
+                opt.textContent = c.contractor_name;
+                contractorSelect.appendChild(opt);
+            });
+        } catch (err) {
+            console.error(err);
+            formMessage.textContent = 'Failed to load dropdown configuration.';
+            formMessage.className = 'text-sm mt-2 text-red-600';
+        }
+    }
+
+    async function loadPreviousCumulative(monthValue) {
+        previousCumulativeData = {};
+        if (!monthValue) return;
+        try {
+            const url = `/api/hse/previous_month?month=${encodeURIComponent(monthValue)}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Failed to load previous month data');
+            previousCumulativeData = await res.json() || {};
+            recalculateAllCumulative();
+        } catch (err) {
+            console.error(err);
+            previousCumulativeData = {};
+        }
+    }
+
+    function recalculateAllCumulative() {
+        // Fields that should NOT accumulate (cumulative = current only)
+        const nonCumulativeFields = ['staff_workmen'];
+        
+        const inputs = document.querySelectorAll('[data-param][data-type="current"]');
+        inputs.forEach(input => {
+            const param = input.getAttribute('data-param');
+            const type = input.getAttribute('data-type');
+            if (!param || type !== 'current') return;
+
+            const currentValue = input.value;
+            const cumulativeInput = document.querySelector(`[data-param="${param}"][data-type="cumulative"]`);
+            if (!cumulativeInput) return;
+
+            // For non-cumulative fields (like staff_workmen), cumulative = current
+            if (nonCumulativeFields.includes(param)) {
+                cumulativeInput.value = currentValue || 0;
+                return;
+            }
+
+            // For SELECT fields (Yes/No), cumulative = current
+            if (input.tagName === 'SELECT') {
+                cumulativeInput.value = currentValue;
+            } else {
+                // For numeric fields, add previous cumulative to current
+                const prev = parseFloat(previousCumulativeData[param] || 0) || 0;
+                const val = parseFloat(currentValue || '0') || 0;
+                cumulativeInput.value = prev + val;
+            }
+        });
+    }
+
+    // Compute and show the auto-generated report number on the frontend
+    function computeReportNumberFromMonth(monthValue) {
+        if (!monthValue) return '';
+        const parts = monthValue.split('-');
+        if (parts.length < 2) return '';
+        const yearStr = parts[0];
+        const monthStr = parts[1];
+        if (!yearStr || !monthStr) return '';
+        const yy = yearStr.slice(-2);
+        const mm = monthStr.padStart(2, '0');
+        return `OH&S-HSE-01-${yy}-${mm}`;
+    }
+
+    function updateReportNumberPreview(monthValue) {
+        if (isEditMode) return; // In edit mode we show the existing report number from the server
+        const mv = monthValue || monthInput.value;
+        const autoNumber = computeReportNumberFromMonth(mv);
+        reportNumberInput.value = autoNumber || '';
+    }
+
+    function setMonitoringReadOnly(isReadOnly) {
+        const currentInputs = document.querySelectorAll('[data-param][data-type="current"]');
+        currentInputs.forEach(el => {
+            if (el.tagName === 'SELECT') {
+                el.disabled = isReadOnly;
+            } else {
+                el.readOnly = isReadOnly;
+            }
+            if (isReadOnly) {
+                el.classList.add('bg-gray-100');
+            } else {
+                el.classList.remove('bg-gray-100');
+            }
+        });
+    }
+
+    function attachCurrentListeners() {
+        const inputs = document.querySelectorAll('[data-param][data-type="current"]');
+        inputs.forEach(input => {
+            input.addEventListener('input', recalculateAllCumulative);
+            input.addEventListener('change', recalculateAllCumulative);
+        });
+    }
+
+    function buildReportData() {
+        const params = [
+            'staff_workmen',
+            'safe_manhours',
+            'induction',
+            'hse_meetings',
+            'hse_awareness',
+            'toolbox_talks',
+            'fatalities',
+            'other_lti',
+            'non_disabling',
+            'first_aid',
+            'near_miss',
+            'dangerous_occurrences',
+            'unsafe_acts',
+            'disciplinary_actions',
+            'mandays_lost',
+            'lti_free',
+            'frequency_rate',
+            'severity_rate',
+            'jsa_hira',
+            'incentives',
+            'penalty',
+            'audits',
+            'pending_ncs',
+            'compensation_raised',
+            'compensation_resolved',
+            'vehicular_accidents',
+            'fire_explosion',
+            'workmen_compensation',
+            'compensation_valid',
+            'esi_registered',
+            'hirac_register',
+            'environment_register',
+            'legal_register'
+        ];
+
+        const data = {};
+        params.forEach(param => {
+            const currentEl = document.querySelector(`[data-param="${param}"][data-type="current"]`);
+            const cumulativeEl = document.querySelector(`[data-param="${param}"][data-type="cumulative"]`);
+            if (!currentEl || !cumulativeEl) return;
+
+            if (currentEl.tagName === 'SELECT') {
+                data[param] = {
+                    current: currentEl.value || '',
+                    cumulative: cumulativeEl.value || ''
+                };
+            } else {
+                data[param] = {
+                    current: parseFloat(currentEl.value || '0') || 0,
+                    cumulative: parseFloat(cumulativeEl.value || '0') || 0
+                };
+            }
+        });
+        return data;
+    }
+
+    async function ensureCsrfToken() {
+        if (csrfToken) return csrfToken;
+        const res = await fetch('/api/auth/csrf-token');
+        const data = await res.json();
+        csrfToken = data.csrf_token;
+        return csrfToken;
+    }
+
+    function formatMonthYear(monthVal) {
+        if (!monthVal) return '-';
+        const [year, month] = monthVal.split('-');
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        return `${monthNames[parseInt(month, 10) - 1]} ${year}`;
+    }
+
+    function openConfirmationModal() {
+        formMessage.textContent = '';
+        formMessage.className = 'text-sm mt-2';
+
+        const nameOfWork = workSelect.value.trim();
+        const monthVal = monthInput.value;
+        const contractorName = contractorSelect.value;
+        const statusDate = document.getElementById('status_date').value;
+        const reportNumber = reportNumberInput.value.trim();
+        const remarksValue = document.getElementById('remarks').value.trim();
+
+        // Validate required fields
+        if (!nameOfWork || !monthVal || !contractorName || !statusDate) {
+            formMessage.textContent = 'Please fill in all required fields before submitting.';
+            formMessage.className = 'text-sm mt-2 text-red-600';
+            return;
+        }
+
+        // Populate confirmation modal with report details
+        document.getElementById('confirmReportNumber').textContent = reportNumber || 'Will be auto-generated';
+        document.getElementById('confirmMonthYear').textContent = formatMonthYear(monthVal);
+        document.getElementById('confirmNameOfWork').textContent = nameOfWork;
+        document.getElementById('confirmContractor').textContent = contractorName;
+        document.getElementById('confirmStatusDate').textContent = statusDate;
+
+        // Get key metrics from form
+        const staffWorkmen = document.querySelector('[data-param="staff_workmen"][data-type="current"]')?.value || 0;
+        const safeManhours = document.querySelector('[data-param="safe_manhours"][data-type="current"]')?.value || 0;
+        const fatalities = parseFloat(document.querySelector('[data-param="fatalities"][data-type="current"]')?.value || 0);
+        const otherLti = parseFloat(document.querySelector('[data-param="other_lti"][data-type="current"]')?.value || 0);
+        const totalLti = fatalities + otherLti;
+        const nearMiss = document.querySelector('[data-param="near_miss"][data-type="current"]')?.value || 0;
+        const firstAid = document.querySelector('[data-param="first_aid"][data-type="current"]')?.value || 0;
+
+        document.getElementById('confirmStaffWorkmen').textContent = staffWorkmen;
+        document.getElementById('confirmSafeManhours').textContent = parseInt(safeManhours).toLocaleString();
+        document.getElementById('confirmTotalLti').textContent = totalLti;
+        document.getElementById('confirmNearMiss').textContent = nearMiss;
+        document.getElementById('confirmFirstAid').textContent = firstAid;
+
+        // Color code LTI count
+        const ltiContainer = document.getElementById('confirmLtiContainer');
+        const ltiValue = document.getElementById('confirmTotalLti');
+        if (totalLti > 0) {
+            ltiContainer.classList.add('bg-red-50', 'border', 'border-red-200');
+            ltiValue.classList.add('text-red-600');
+            ltiValue.classList.remove('text-green-600');
+        } else {
+            ltiContainer.classList.remove('bg-red-50', 'border', 'border-red-200');
+            ltiValue.classList.add('text-green-600');
+            ltiValue.classList.remove('text-red-600');
+        }
+
+        // Show remarks if present
+        const remarksSection = document.getElementById('confirmRemarksSection');
+        if (remarksValue) {
+            document.getElementById('confirmRemarks').textContent = remarksValue;
+            remarksSection.classList.remove('hidden');
+        } else {
+            remarksSection.classList.add('hidden');
+        }
+
+        // Update button text for edit mode
+        finalSubmitBtnText.textContent = isEditMode ? 'Confirm & Resubmit Report' : 'Confirm & Submit Report';
+
+        // Show the modal
+        confirmModal.classList.remove('hidden');
+    }
+
+    function closeConfirmationModal() {
+        confirmModal.classList.add('hidden');
+    }
+
+    async function handleSubmit() {
+        const nameOfWork = workSelect.value.trim();
+        const monthVal = monthInput.value;
+        const contractorName = contractorSelect.value;
+        const statusDate = document.getElementById('status_date').value;
+        const remarksValue = document.getElementById('remarks').value.trim();
+
+        const [yearStr] = monthVal.split('-');
+        const year = parseInt(yearStr, 10);
+
+        const payload = {
+            month: monthVal,
+            year: year,
+            name_of_work: nameOfWork,
+            contractor_name: contractorName,
+            status_date: statusDate,
+            remarks: remarksValue,
+            report_data: buildReportData()
+        };
+
+        const url = isEditMode ? `/api/hse/update/${editReportId}` : '/api/hse/submit';
+
+        try {
+            setSubmitting(true);
+            const token = await ensureCsrfToken();
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': token
+                },
+                body: JSON.stringify(payload)
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok || body.success === false) {
+                const msg = body.message || body.error || 'Failed to submit report';
+                throw new Error(msg);
+            }
+            
+            // Close modal and show success
+            closeConfirmationModal();
+            formMessage.textContent = body.message || 'Report submitted successfully.';
+            formMessage.className = 'text-sm mt-2 text-green-600';
+            
+            setTimeout(() => {
+                window.location.href = '/safety_officer/dashboard';
+            }, 1500);
+        } catch (err) {
+            console.error(err);
+            closeConfirmationModal();
+            formMessage.textContent = err.message || 'Failed to submit report.';
+            formMessage.className = 'text-sm mt-2 text-red-600';
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    async function loadEditReportIfNeeded() {
+        const params = new URLSearchParams(window.location.search);
+        const reportId = params.get('report_id');
+        if (!reportId) return;
+        isEditMode = true;
+        editReportId = reportId;
+        openConfirmBtn.querySelector('span').textContent = 'Review & Resubmit Report';
+
+        try {
+            const res = await fetch(`/api/hse/report/${encodeURIComponent(reportId)}`);
+            if (!res.ok) throw new Error('Failed to load report for editing');
+            const report = await res.json();
+
+            // Set selected Name of Work (will match one of the configured options)
+            workSelect.value = report.name_of_work || '';
+            contractorSelect.value = report.contractor_name || '';
+            document.getElementById('status_date').value = report.status_date || '';
+            reportNumberInput.value = report.report_number || '';
+            document.getElementById('remarks').value = report.remarks || '';
+
+            if (report.month && report.year) {
+                const monthDate = new Date(`${report.month} 1, ${report.year}`);
+                const monthVal = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`;
+                monthInput.value = monthVal;
+                await loadPreviousCumulative(monthVal);
+            }
+
+            const reportData = report.report_data || {};
+            Object.keys(reportData).forEach(param => {
+                const paramData = reportData[param] || {};
+                const currentEl = document.querySelector(`[data-param="${param}"][data-type="current"]`);
+                const cumulativeEl = document.querySelector(`[data-param="${param}"][data-type="cumulative"]`);
+                if (!currentEl || !cumulativeEl) return;
+                if (currentEl.tagName === 'SELECT') {
+                    currentEl.value = paramData.current || '';
+                    cumulativeEl.value = paramData.cumulative || '';
+                } else {
+                    currentEl.value = paramData.current != null ? paramData.current : '';
+                    cumulativeEl.value = paramData.cumulative != null ? paramData.cumulative : '';
+                }
+            });
+        } catch (err) {
+            console.error(err);
+            formMessage.textContent = 'Failed to load report for editing.';
+            formMessage.className = 'text-sm mt-2 text-red-600';
+        }
+    }
+
+    async function init() {
+        await loadConfig();
+        attachCurrentListeners();
+        setMonitoringReadOnly(false);
+
+        const today = new Date();
+        const ym = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        if (!monthInput.value) monthInput.value = ym;
+
+        // Check if month already has a report
+        await checkMonthExists(monthInput.value);
+        await loadPreviousCumulative(monthInput.value);
+        await loadEditReportIfNeeded();
+    }
+
+    async function checkMonthExists(monthValue) {
+        if (!monthValue) return;
+        
+        // Skip check in edit mode (user is editing existing report)
+        if (isEditMode) return;
+
+        // Reset warning area
+        monthWarningMessage.style.display = 'none';
+        monthWarningMessage.innerHTML = '';
+
+        const [yearStr, monthStr] = monthValue.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        
+        if (!year || !month) return;
+        
+        try {
+            const res = await fetch(`/api/hse/check_month?month=${encodeURIComponent(monthValue)}&year=${year}`);
+            const data = await res.json();
+            
+            if (data.exists) {
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                                    'July', 'August', 'September', 'October', 'November', 'December'];
+                const monthName = monthNames[month - 1];
+                const status = data.status || 'unknown';
+                const reportNum = data.report_number || 'N/A';
+
+                const existingReportHtml = `
+                    <div class="bg-orange-50 border-l-4 border-orange-500 p-4 rounded mb-2">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-orange-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm font-medium text-orange-800">
+                                    ⚠️ You have already submitted a report for ${monthName} ${year}. Report: ${reportNum} (Status: ${status}). You cannot create another report for this month.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                monthWarningMessage.innerHTML += existingReportHtml;
+                monthWarningMessage.style.display = 'block';
+
+                // Disable submit button for duplicate month
+                openConfirmBtn.disabled = true;
+                openConfirmBtn.style.opacity = '0.6';
+                openConfirmBtn.style.cursor = 'not-allowed';
+
+                // Make monitoring parameters read-only for already filled months
+                setMonitoringReadOnly(true);
+            } else {
+                // Re-enable submit button if no duplicate for this month
+                openConfirmBtn.disabled = false;
+                openConfirmBtn.style.opacity = '1';
+                openConfirmBtn.style.cursor = 'pointer';
+
+                 // Allow editing monitoring parameters for new month
+                setMonitoringReadOnly(false);
+            }
+
+            // Additionally check for any previous unapproved reports to show warning with month details
+            try {
+                const unapprovedRes = await fetch(`/api/hse/unapproved_before?month=${encodeURIComponent(monthValue)}&year=${year}`);
+                const unapprovedData = await unapprovedRes.json();
+                if (unapprovedRes.ok && unapprovedData.has_unapproved && Array.isArray(unapprovedData.reports) && unapprovedData.reports.length > 0) {
+                    const details = unapprovedData.reports
+                        .map(r => {
+                            const m = (r.month || '').toString();
+                            const y = r.year != null ? r.year : '';
+                            const s = (r.status || '').toString().toLowerCase();
+                            const statusLabel = s ? ` (${s})` : '';
+                            return `${m} ${y}${statusLabel}`.trim();
+                        })
+                        .join(', ');
+
+                    const unapprovedHtml = `
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded mt-2">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-red-500 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-red-800">
+                                        Previous reports for following month(s) are not approved: ${details}.<br>
+                                        Please get it approved First to Avoid any Discrepancy in Cumulative Numbers.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    monthWarningMessage.innerHTML += unapprovedHtml;
+                    monthWarningMessage.style.display = 'block';
+                }
+            } catch (err) {
+                console.error('Error checking previous unapproved reports:', err);
+            }
+
+            // Show auto-generated report number only when there are no warnings
+            const hasWarning =
+                monthWarningMessage.style.display !== 'none' &&
+                (monthWarningMessage.innerHTML || '').trim() !== '';
+            if (!isEditMode) {
+                if (!hasWarning) {
+                    updateReportNumberPreview(monthValue);
+                } else {
+                    // Clear preview when there is any warning
+                    reportNumberInput.value = '';
+                }
+            }
+        } catch (err) {
+            console.error('Error checking month:', err);
+        }
+    }
+
+    monthInput.addEventListener('change', async e => {
+        const monthValue = e.target.value;
+        await checkMonthExists(monthValue);
+        loadPreviousCumulative(monthValue);
+    });
+
+    // Open confirmation modal when clicking submit button
+    openConfirmBtn.addEventListener('click', openConfirmationModal);
+
+    // Close confirmation modal
+    closeConfirmModalBtn.addEventListener('click', closeConfirmationModal);
+    cancelConfirmBtn.addEventListener('click', closeConfirmationModal);
+
+    // Close modal when clicking outside
+    confirmModal.addEventListener('click', (e) => {
+        if (e.target === confirmModal) closeConfirmationModal();
+    });
+
+    // Final submit from confirmation modal
+    finalSubmitBtn.addEventListener('click', handleSubmit);
+
+    // Prevent form from submitting normally (since we use the modal)
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        openConfirmationModal();
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        try {
+            const csrfRes = await fetch('/api/auth/csrf-token');
+            const csrfData = await csrfRes.json();
+            await fetch('/logout', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': csrfData.csrf_token
+                }
+            });
+            window.location.href = '/login';
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    init();
+})();
+</script>
+
+</body>
+</html>
+
+

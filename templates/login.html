@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HSE Login | SIMON India</title>
+  <link rel="icon" href="https://www.simonindia.com/favicon.ico" />
+  <!-- Tailwind CSS via CDN for consistency with other SIL_Forms modules -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100 flex items-center justify-center px-4">
+  <div class="w-full max-w-md">
+    <!-- Brand header -->
+    <div class="text-center mb-6">
+      <img
+        src="/static/images/simonindia_logo.png"
+        alt="SIMON India Limited"
+        class="mx-auto mb-3 h-16 w-auto object-contain drop-shadow"
+      />
+      <h1 class="text-2xl font-semibold text-slate-900">SIMON India Limited</h1>
+      <p class="mt-1 text-sm text-slate-600">HSE Reports Management System</p>
+    </div>
+
+    <!-- Error alert -->
+    <div id="error-box" class="hidden mb-4 rounded-md border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 relative">
+      <span id="error-message"></span>
+      <button
+        type="button"
+        id="error-close"
+        class="absolute right-2 top-2 text-red-500 hover:text-red-700"
+        aria-label="Dismiss error"
+      >
+        &times;
+      </button>
+    </div>
+
+    <!-- Login card -->
+    <div class="bg-white rounded-xl shadow-md border border-slate-200 px-6 py-6">
+      <form id="login-form" class="space-y-5" novalidate>
+        <div>
+          <label for="email" class="block text-sm font-medium text-slate-700">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            autocomplete="email"
+            class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+            placeholder="you@company.com"
+          />
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium text-slate-700">Password</label>
+          <div class="mt-1 relative">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              required
+              autocomplete="current-password"
+              class="block w-full rounded-lg border border-slate-300 px-3 py-2 pr-10 text-sm shadow-sm focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+              placeholder="Enter your password"
+            />
+            <button
+              type="button"
+              id="toggle-password"
+              class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
+              tabindex="-1"
+              aria-label="Toggle password visibility"
+            >
+              <!-- Simple eye icon -->
+              <svg id="eye-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M2.25 12s2.25-6.75 9.75-6.75S21.75 12 21.75 12 19.5 18.75 12 18.75 2.25 12 2.25 12z" />
+                <circle cx="12" cy="12" r="3.25" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          id="submit-btn"
+          class="w-full inline-flex justify-center items-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          <span id="submit-text">Sign In</span>
+          <svg
+            id="submit-spinner"
+            class="hidden ml-2 h-4 w-4 animate-spin text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            ></path>
+          </svg>
+        </button>
+      </form>
+
+      <p class="mt-4 text-xs text-slate-500 text-center">
+        For access or support, please contact SIMON India IT Department.
+      </p>
+      <p class="mt-1 text-xs text-slate-400 text-center">
+        <a href="https://www.simonindia.com" target="_blank" rel="noopener noreferrer" class="underline hover:text-slate-600">
+          Visit SIMON India website
+        </a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      let csrfToken = null;
+
+      const errorBox = document.getElementById('error-box');
+      const errorMessage = document.getElementById('error-message');
+      const errorClose = document.getElementById('error-close');
+      const form = document.getElementById('login-form');
+      const submitBtn = document.getElementById('submit-btn');
+      const submitText = document.getElementById('submit-text');
+      const submitSpinner = document.getElementById('submit-spinner');
+      const togglePassword = document.getElementById('toggle-password');
+      const passwordInput = document.getElementById('password');
+
+      function showError(message) {
+        errorMessage.textContent = message || 'Something went wrong. Please try again.';
+        errorBox.classList.remove('hidden');
+      }
+
+      function hideError() {
+        errorBox.classList.add('hidden');
+        errorMessage.textContent = '';
+      }
+
+      function setLoading(isLoading) {
+        submitBtn.disabled = isLoading;
+        submitText.textContent = isLoading ? 'Signing In...' : 'Sign In';
+        submitSpinner.classList.toggle('hidden', !isLoading);
+      }
+
+      // Fetch CSRF token on page load
+      async function loadCsrfToken() {
+        try {
+          const res = await fetch('/api/auth/csrf-token', {
+            credentials: 'include'
+          });
+          if (!res.ok) {
+            throw new Error('Unable to fetch CSRF token');
+          }
+          const data = await res.json();
+          csrfToken = data && (data.csrf_token || data.csrfToken || data.token);
+        } catch (err) {
+          console.error('CSRF token fetch failed:', err);
+          showError('Unable to initialize secure session. Please refresh the page or contact IT support.');
+        }
+      }
+
+      // Handle password visibility toggle
+      if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', function () {
+          const isPassword = passwordInput.type === 'password';
+          passwordInput.type = isPassword ? 'text' : 'password';
+          togglePassword.classList.toggle('text-slate-400', !isPassword);
+          togglePassword.classList.toggle('text-slate-600', isPassword);
+        });
+      }
+
+      // Dismiss error
+      if (errorClose) {
+        errorClose.addEventListener('click', hideError);
+      }
+
+      // Form submit handler
+      if (form) {
+        form.addEventListener('submit', async function (event) {
+          event.preventDefault();
+          hideError();
+
+          const email = (document.getElementById('email') || {}).value || '';
+          const password = (document.getElementById('password') || {}).value || '';
+
+          if (!email || !password) {
+            showError('Please enter both email and password.');
+            return;
+          }
+
+          setLoading(true);
+
+          try {
+            const headers = {
+              'Content-Type': 'application/json'
+            };
+
+            if (csrfToken) {
+              headers['X-CSRF-Token'] = csrfToken;
+            }
+
+            const response = await fetch('/login', {
+              method: 'POST',
+              headers: headers,
+              credentials: 'include',
+              body: JSON.stringify({ email: email.trim(), password: password })
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok || !data || data.success !== true) {
+              const message = (data && data.message) || 'Invalid credentials or login failed. Please try again.';
+              showError(message);
+              setLoading(false);
+              return;
+            }
+
+            const redirectUrl = data.redirect || '/';
+            window.location.href = redirectUrl;
+          } catch (error) {
+            console.error('Login error:', error);
+            showError('Network error while signing in. Please check your connection and try again.');
+            setLoading(false);
+          }
+        });
+      }
+
+      // Initialize page
+      loadCsrfToken();
+    })();
+  </script>
+</body>
+</html>
+
+
+

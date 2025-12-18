@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSE Admin Dashboard</title>
+    <link rel="icon" href="https://www.simonindia.com/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-blue-900 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="https://simonindia.com/assets/images/logo.png" alt="SIMON India Logo" class="h-8">
+                <h1 class="text-xl font-bold">HSE Admin Dashboard</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-blue-200">Welcome, {{ user.full_name }}</span>
+                <form id="logout-form" class="inline">
+                    <button type="submit" class="bg-red-600 px-3 py-2 rounded hover:bg-red-500 transition">
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        <div id="flash-messages" class="mb-4"></div>
+
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Dashboard Overview</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Total Users -->
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M13 20v-2a4 4 0 00-3-3.874M9 20H4v-2a4 4 0 013-3.874M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Total Users</h3>
+                            <p id="stat-total-users" class="text-2xl font-bold text-blue-600">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Safety Officers -->
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M5.121 17.804A4 4 0 017 17h10a4 4 0 011.879.504M15 11a3 3 0 10-6 0 3 3 0 006 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Safety Officers</h3>
+                            <p id="stat-safety-officers" class="text-2xl font-bold text-green-600">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Project Managers -->
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-indigo-100 text-indigo-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Project Managers</h3>
+                            <p id="stat-project-managers" class="text-2xl font-bold text-indigo-600">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Reports -->
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M3 7h18M3 12h18M3 17h18"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Total Reports</h3>
+                            <p id="stat-total-reports" class="text-2xl font-bold text-yellow-600">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Reports -->
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Pending Reports</h3>
+                            <p id="stat-pending-reports" class="text-2xl font-bold text-purple-600">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Approved Reports -->
+                <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-red-100 text-red-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Approved Reports</h3>
+                            <p id="stat-approved-reports" class="text-2xl font-bold text-red-600">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Management Options</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Configuration Management -->
+                <a href="/admin/config" class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border-l-4 border-blue-500">
+                    <div class="flex items-center mb-3">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M9.75 3a2.25 2.25 0 00-2.122 1.5H5.25A2.25 2.25 0 003 6.75v2.378a2.25 2.25 0 001.5 2.122v3.5A2.25 2.25 0 006.75 17h1.378A2.25 2.25 0 0010.25 18.5h3.5A2.25 2.25 0 0016 17h1.25A2.25 2.25 0 0019.5 14.75v-3.5A2.25 2.25 0 0018 9.128V6.75A2.25 2.25 0 0015.75 4.5h-2.378A2.25 2.25 0 0011.25 3h-1.5z"/>
+                            </svg>
+                        </div>
+                        <h3 class="ml-3 text-lg font-semibold text-gray-800">Configuration Management</h3>
+                    </div>
+                    <p class="text-gray-600">
+                        Manage prepared by, approved by, and contractor dropdowns.
+                    </p>
+                </a>
+
+                <!-- User Management -->
+                <a href="/admin/users" class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow border-l-4 border-green-500">
+                    <div class="flex items-center mb-3">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M9 20H4v-2a4 4 0 013-3.874M15 11a3 3 0 10-6 0 3 3 0 006 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="ml-3 text-lg font-semibold text-gray-800">User Management</h3>
+                    </div>
+                    <p class="text-gray-600">
+                        Create and manage Safety Officers and Project Managers.
+                    </p>
+                </a>
+
+                <!-- View All Reports (placeholder) -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let csrfToken = null;
+
+        function showFlash(message, type = 'success') {
+            const container = document.getElementById('flash-messages');
+            const baseClasses = 'mb-4 p-3 rounded-md border ';
+            const typeClasses = type === 'success'
+                ? 'bg-green-100 text-green-700 border-green-300'
+                : 'bg-red-100 text-red-700 border-red-300';
+            container.innerHTML = `<div class="${baseClasses + typeClasses}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        async function fetchCsrfToken() {
+            try {
+                const res = await fetch('/api/auth/csrf-token');
+                const data = await res.json();
+                csrfToken = data.csrf_token;
+            } catch (e) {
+                console.error('Failed to fetch CSRF token', e);
+            }
+        }
+
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/admin/stats');
+                if (!res.ok) {
+                    throw new Error('Failed to load stats');
+                }
+                const data = await res.json();
+                document.getElementById('stat-total-users').textContent = data.total_users ?? 0;
+                document.getElementById('stat-safety-officers').textContent = data.safety_officers ?? 0;
+                document.getElementById('stat-project-managers').textContent = data.project_managers ?? 0;
+                document.getElementById('stat-total-reports').textContent = data.total_reports ?? 0;
+                document.getElementById('stat-pending-reports').textContent = data.pending_reports ?? 0;
+                document.getElementById('stat-approved-reports').textContent = data.approved_reports ?? 0;
+            } catch (e) {
+                console.error(e);
+                showFlash('Failed to load statistics', 'error');
+            }
+        }
+
+        async function handleLogout(event) {
+            event.preventDefault();
+            try {
+                if (!csrfToken) {
+                    await fetchCsrfToken();
+                }
+                const res = await fetch('/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken || ''
+                    },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = '/login';
+                } else {
+                    showFlash(data.message || 'Logout failed', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showFlash('Logout request failed', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchCsrfToken();
+            await fetchStats();
+            const logoutForm = document.getElementById('logout-form');
+            logoutForm.addEventListener('submit', handleLogout);
+        });
+    </script>
+</body>
+</html>
+
+

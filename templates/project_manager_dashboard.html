@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="icon" href="https://www.simonindia.com/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<header class="bg-white shadow-sm">
+    <div class="max-w-6xl mx-auto flex items-center justify-between py-4 px-4">
+        <div class="flex items-center space-x-3">
+            <img src="{{ url_for('static', filename='images/simonindia_logo.png') }}" alt="Simon India Limited" class="w-24 h-auto">
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">Manager Dashboard</h1>
+                <p class="text-sm text-gray-500">HSE Report Review</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-6 text-sm">
+            <div class="text-right">
+                <p class="font-semibold text-gray-800">{{ user.full_name }}</p>
+                <p class="text-gray-500">{{ user.email }}</p>
+            </div>
+            <button id="logoutBtn" class="relative px-3 py-1.5 rounded-md bg-red-500 text-white text-xs font-semibold hover:bg-red-600">
+                Logout
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+    <!-- Stats cards -->
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl p-5 shadow border border-gray-100 flex items-center justify-between">
+            <div>
+                <h2 class="text-sm font-semibold text-gray-600">Pending Reports</h2>
+                <p class="mt-1 text-3xl font-bold text-yellow-600" id="statPending">0</p>
+            </div>
+            <div class="text-yellow-400">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-5 shadow border border-gray-100 flex items-center justify-between">
+            <div>
+                <h2 class="text-sm font-semibold text-gray-600">Reviewed This Month</h2>
+                <p class="mt-1 text-3xl font-bold text-green-600" id="statReviewed">0</p>
+            </div>
+            <div class="text-green-500">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-5 shadow border border-gray-100 flex items-center justify-between">
+            <div>
+                <h2 class="text-sm font-semibold text-gray-600">Notifications</h2>
+                <p class="mt-1 text-3xl font-bold text-blue-600" id="statNotifications">0</p>
+            </div>
+            <div class="text-blue-500">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="bg-white rounded-xl p-4 shadow border border-gray-100">
+        <div class="flex flex-wrap items-end gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Month</label>
+                <select id="filterMonth" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
+                    <option value="">All Months</option>
+                    <option value="January">January</option>
+                    <option value="February">February</option>
+                    <option value="March">March</option>
+                    <option value="April">April</option>
+                    <option value="May">May</option>
+                    <option value="June">June</option>
+                    <option value="July">July</option>
+                    <option value="August">August</option>
+                    <option value="September">September</option>
+                    <option value="October">October</option>
+                    <option value="November">November</option>
+                    <option value="December">December</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Year</label>
+                <select id="filterYear" class="border border-gray-300 rounded-md px-3 py-1.5 text-sm">
+                    <option value="">All Years</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                    <option value="2030">2030</option>
+                </select>
+            </div>
+            <div class="flex-1 min-w-[160px]">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Contractor</label>
+                <select id="filterContractor" class="w-full border border-gray-300 rounded-md px-3 py-1.5 text-sm">
+                    <option value="">All Contractors</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="applyFiltersBtn"
+                        class="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+                    Apply Filters
+                </button>
+                <button id="clearFiltersBtn"
+                        class="px-3 py-2 rounded-md border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Clear Filters
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reports table with tabs -->
+    <section class="bg-white rounded-xl shadow border border-gray-100">
+        <div class="px-4 py-3 border-b border-gray-100">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <button id="tabPending"
+                            class="px-3 py-1.5 text-xs font-semibold rounded-md bg-blue-600 text-white">
+                        Pending Reports
+                    </button>
+                    <button id="tabApproved"
+                            class="px-3 py-1.5 text-xs font-semibold rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">
+                        Approved Reports
+                    </button>
+                </div>
+                <span id="tableStatus" class="text-xs text-gray-500"></span>
+            </div>
+            <p id="tableTitle" class="mt-1 text-xs text-gray-500">Pending HSE Reports</p>
+        </div>
+
+        <div id="emptyState" class="p-8 text-center hidden">
+            <p class="text-gray-600 mb-3">No reports match the selected filters.</p>
+        </div>
+
+        <div id="loadingState" class="p-6 text-center text-sm text-gray-500 hidden">
+            <span class="inline-flex items-center">
+                <svg class="w-4 h-4 mr-2 animate-spin text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 12a8 8 0 018-8m0 0v4m0-4l-3 3"/>
+                </svg>
+                Loading reports...
+            </span>
+        </div>
+
+        <div id="tableContainer" class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 text-gray-600">
+                <tr>
+                    <th class="px-3 py-2 text-left font-medium">Report No.</th>
+                    <th class="px-3 py-2 text-left font-medium">Month / Year</th>
+                    <th class="px-3 py-2 text-left font-medium">Name of Work</th>
+                    <th class="px-3 py-2 text-left font-medium">Contractor</th>
+                    <th class="px-3 py-2 text-left font-medium">Prepared By</th>
+                    <th class="px-3 py-2 text-left font-medium">Submitted Date</th>
+                    <th class="px-3 py-2 text-left font-medium">Status</th>
+                    <th class="px-3 py-2 text-left font-medium">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="reportsBody" class="divide-y divide-gray-100 bg-white"></tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<script>
+(function () {
+    const filterMonth = document.getElementById('filterMonth');
+    const filterYear = document.getElementById('filterYear');
+    const filterContractor = document.getElementById('filterContractor');
+    const applyFiltersBtn = document.getElementById('applyFiltersBtn');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    const tableStatus = document.getElementById('tableStatus');
+    const tableTitle = document.getElementById('tableTitle');
+    const reportsBody = document.getElementById('reportsBody');
+    const emptyState = document.getElementById('emptyState');
+    const loadingState = document.getElementById('loadingState');
+    const tableContainer = document.getElementById('tableContainer');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    const statPending = document.getElementById('statPending');
+    const statReviewed = document.getElementById('statReviewed');
+    const statNotifications = document.getElementById('statNotifications');
+    const tabPending = document.getElementById('tabPending');
+    const tabApproved = document.getElementById('tabApproved');
+
+    let currentStatus = 'pending'; // 'pending' or 'approved'
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString();
+    }
+
+    async function loadContractors() {
+        try {
+            const res = await fetch('/api/hse/config');
+            if (!res.ok) return;
+            const data = await res.json();
+            (data.contractors || []).forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.contractor_name;
+                opt.textContent = c.contractor_name;
+                filterContractor.appendChild(opt);
+            });
+        } catch (e) {
+            console.error('Failed to load contractors', e);
+        }
+    }
+
+    async function loadNotificationsSummary() {
+        try {
+            const res = await fetch('/api/hse/notifications');
+            if (!res.ok) return;
+            const data = await res.json();
+            const unread = data.unread_count ?? 0;
+            statNotifications.textContent = unread;
+        } catch (e) {
+            console.error('Failed to load notifications', e);
+        }
+    }
+
+    async function loadReports() {
+        const params = new URLSearchParams();
+        if (filterMonth.value) params.set('month', filterMonth.value);
+        if (filterYear.value) params.set('year', filterYear.value);
+        if (filterContractor.value) params.set('contractor_name', filterContractor.value);
+
+        try {
+            tableStatus.textContent = 'Loading...';
+            loadingState.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+            tableContainer.classList.add('hidden');
+            reportsBody.innerHTML = '';
+
+            const endpoint = currentStatus === 'approved'
+                ? '/api/hse/approved_reports'
+                : '/api/hse/pending_reports';
+
+            const res = await fetch(endpoint + '?' + params.toString());
+            if (!res.ok) throw new Error('Failed to load reports');
+            const reports = await res.json();
+
+            if (currentStatus === 'pending') {
+                statPending.textContent = reports.length;
+            } else {
+                statReviewed.textContent = reports.length;
+            }
+
+            if (!reports.length) {
+                emptyState.classList.remove('hidden');
+                tableContainer.classList.add('hidden');
+                tableStatus.textContent = 'No reports found.';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+
+            reports.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50';
+                const monthYear = r.month && r.year ? `${r.month} ${r.year}` : '-';
+                const submitted = r.created_at ? formatDate(r.created_at) : '-';
+
+                tr.innerHTML = `
+                    <td class="px-3 py-2 whitespace-nowrap font-medium text-gray-800">${r.report_number || '-'}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-gray-700">${monthYear}</td>
+                    <td class="px-3 py-2 text-gray-700">${r.name_of_work || '-'}</td>
+                    <td class="px-3 py-2 text-gray-700">${r.contractor_name || '-'}</td>
+                    <td class="px-3 py-2 text-gray-700">
+                        <div class="flex flex-col">
+                            <span>${r.prepared_by_name || '-'}</span>
+                            ${r.prepared_by_email ? `<span class="text-xs text-gray-400">${r.prepared_by_email}</span>` : ''}
+                        </div>
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap text-gray-600">${submitted}</td>
+                    <td class="px-3 py-2 whitespace-nowrap">
+                        ${
+                            currentStatus === 'pending'
+                                ? '<span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-medium">Pending Review</span>'
+                                : '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-medium">Approved</span>'
+                        }
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap">
+                        <div class="flex items-center space-x-2">
+                            ${
+                                currentStatus === 'pending'
+                                    ? `<button data-action="review" data-id="${r.id}"
+                                            class="px-3 py-1.5 text-xs rounded bg-blue-600 text-white hover:bg-blue-700">
+                                            Review
+                                       </button>`
+                                    : `<button data-action="download" data-id="${r.id}"
+                                            class="px-3 py-1.5 text-xs rounded bg-green-600 text-white hover:bg-green-700">
+                                            Download PDF
+                                       </button>`
+                            }
+                        </div>
+                    </td>
+                `;
+                reportsBody.appendChild(tr);
+            });
+
+            const label = currentStatus === 'approved' ? 'Approved HSE Reports' : 'Pending HSE Reports';
+            tableTitle.textContent = label;
+            tableStatus.textContent = `${reports.length} report(s) loaded`;
+        } catch (e) {
+            console.error(e);
+            tableStatus.textContent = 'Failed to load reports.';
+            emptyState.classList.remove('hidden');
+            tableContainer.classList.add('hidden');
+        } finally {
+            loadingState.classList.add('hidden');
+        }
+    }
+
+    function applyFilters() {
+        loadReports();
+    }
+
+    function clearFilters() {
+        initDefaults();
+        filterContractor.value = '';
+        loadReports();
+    }
+
+    reportsBody.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const id = btn.getAttribute('data-id');
+        const action = btn.getAttribute('data-action');
+        if (!id || !action) return;
+
+        if (action === 'review') {
+            window.location.href = `/project_manager/review/${encodeURIComponent(id)}`;
+        } else if (action === 'download') {
+            downloadHsePdf(id);
+        }
+    });
+
+    async function downloadHsePdf(reportId) {
+        try {
+            const res = await fetch(`/api/hse/download/${encodeURIComponent(reportId)}`);
+            if (!res.ok) {
+                let message = 'PDF download failed.';
+                try {
+                    const data = await res.json();
+                    if (data && data.error) {
+                        message = data.error;
+                    }
+                } catch (e) {
+                    // ignore JSON parse errors
+                }
+                alert(message);
+                return;
+            }
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Extract filename from Content-Disposition header
+            const contentDisposition = res.headers.get('Content-Disposition');
+            let filename = `HSE_Report_${reportId}.pdf`;
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+            a.download = filename;
+            
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Failed to download PDF', err);
+            alert('PDF download failed due to a network error.');
+        }
+    }
+
+    applyFiltersBtn.addEventListener('click', applyFilters);
+    clearFiltersBtn.addEventListener('click', clearFilters);
+
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            const csrfRes = await fetch('/api/auth/csrf-token');
+            const csrfData = await csrfRes.json();
+            await fetch('/logout', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': csrfData.csrf_token
+                }
+            });
+            window.location.href = '/login';
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    function initDefaults() {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const monthNames = [
+            'January',
+            'February',
+            'March',
+            'April',
+            'May',
+            'June',
+            'July',
+            'August',
+            'September',
+            'October',
+            'November',
+            'December'
+        ];
+        // Default to "All Months" so managers see the full list on load
+        filterMonth.value = '';
+        filterYear.value = String(currentYear);
+    }
+
+    async function init() {
+        initDefaults();
+        await loadContractors();
+        await loadNotificationsSummary();
+        await loadReports();
+    }
+
+    tabPending.addEventListener('click', () => {
+        if (currentStatus === 'pending') return;
+        currentStatus = 'pending';
+        tabPending.classList.remove('bg-gray-100', 'text-gray-700');
+        tabPending.classList.add('bg-blue-600', 'text-white');
+        tabApproved.classList.remove('bg-blue-600', 'text-white');
+        tabApproved.classList.add('bg-gray-100', 'text-gray-700');
+        loadReports();
+    });
+
+    tabApproved.addEventListener('click', () => {
+        if (currentStatus === 'approved') return;
+        currentStatus = 'approved';
+        tabApproved.classList.remove('bg-gray-100', 'text-gray-700');
+        tabApproved.classList.add('bg-blue-600', 'text-white');
+        tabPending.classList.remove('bg-blue-600', 'text-white');
+        tabPending.classList.add('bg-gray-100', 'text-gray-700');
+        loadReports();
+    });
+
+    init();
+})();
+</script>
+
+</body>
+</html>
+
+

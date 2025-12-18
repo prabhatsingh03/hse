@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSE Configuration Management</title>
+    <link rel="icon" href="https://www.simonindia.com/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-blue-900 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <img src="https://simonindia.com/assets/images/logo.png" alt="SIMON India Logo" class="h-8">
+                <h1 class="text-xl font-bold">HSE Configuration Management</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <a href="/admin/dashboard" class="bg-blue-700 px-3 py-2 rounded hover:bg-blue-600 transition">Back to Dashboard</a>
+                <form id="logout-form" class="inline">
+                    <button type="submit" class="bg-red-600 px-3 py-2 rounded hover:bg-red-500 transition">
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        <div id="message-area" class="mb-4"></div>
+
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="border-b border-gray-200">
+                <nav class="flex -mb-px" aria-label="Tabs">
+                    <button data-tab="prepared_by" class="tab-btn active-tab px-4 py-3 border-b-2 font-medium text-sm">
+                        Prepared By Profiles
+                    </button>
+                    <button data-tab="approved_by" class="tab-btn px-4 py-3 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">
+                        Approved By Profiles
+                    </button>
+                    <button data-tab="contractor" class="tab-btn px-4 py-3 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">
+                        Contractors
+                    </button>
+                    <button data-tab="name_of_work" class="tab-btn px-4 py-3 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300">
+                        Name of Work
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Prepared By Tab -->
+            <div id="tab-prepared_by" class="tab-panel p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Prepared By Profiles</h2>
+                <form id="prepared-form" class="space-y-4 mb-6">
+                    <input type="hidden" id="prepared-config-id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <input type="text" id="prepared-name" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                            <input type="text" id="prepared-designation" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="prepared-cancel-btn"
+                                class="hidden px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" id="prepared-submit-btn"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Add Profile
+                        </button>
+                    </div>
+                </form>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prepared-table-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Approved By Tab -->
+            <div id="tab-approved_by" class="tab-panel p-6 hidden">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Approved By Profiles</h2>
+                <form id="approved-form" class="space-y-4 mb-6">
+                    <input type="hidden" id="approved-config-id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <input type="text" id="approved-name" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                            <input type="text" id="approved-designation" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="approved-cancel-btn"
+                                class="hidden px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" id="approved-submit-btn"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Add Profile
+                        </button>
+                    </div>
+                </form>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approved-table-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Contractors Tab -->
+            <div id="tab-contractor" class="tab-panel p-6 hidden">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Contractors</h2>
+                <form id="contractor-form" class="space-y-4 mb-6">
+                    <input type="hidden" id="contractor-config-id">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contractor Name</label>
+                        <input type="text" id="contractor-name" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="contractor-cancel-btn"
+                                class="hidden px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" id="contractor-submit-btn"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Add Contractor
+                        </button>
+                    </div>
+                </form>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contractor Name</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contractor-table-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Name of Work Tab -->
+            <div id="tab-name_of_work" class="tab-panel p-6 hidden">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Name of Work</h2>
+                <form id="work-form" class="space-y-4 mb-6">
+                    <input type="hidden" id="work-config-id">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Name of Work</label>
+                        <input type="text" id="work-name" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="work-cancel-btn"
+                                class="hidden px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" id="work-submit-btn"
+                                class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Add Name of Work
+                        </button>
+                    </div>
+                </form>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name of Work</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="work-table-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let csrfToken = null;
+
+        function showMessage(message, type = 'success') {
+            const messageArea = document.getElementById('message-area');
+            const bgColor = type === 'success'
+                ? 'bg-green-100 text-green-700 border-green-300'
+                : 'bg-red-100 text-red-700 border-red-300';
+            messageArea.innerHTML =
+                `<div class="p-3 rounded-md border ${bgColor}">${message}</div>`;
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        async function fetchCsrfToken() {
+            try {
+                const res = await fetch('/api/auth/csrf-token');
+                const data = await res.json();
+                csrfToken = data.csrf_token;
+            } catch (e) {
+                console.error('Failed to fetch CSRF token', e);
+            }
+        }
+
+        function setupTabs() {
+            const buttons = document.querySelectorAll('.tab-btn');
+            const panels = document.querySelectorAll('.tab-panel');
+
+            buttons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.getAttribute('data-tab');
+
+                    buttons.forEach(b => b.classList.remove('active-tab', 'border-blue-500', 'text-blue-600'));
+                    buttons.forEach(b => {
+                        if (!b.classList.contains('active-tab')) {
+                            b.classList.add('text-gray-500', 'border-transparent');
+                        }
+                    });
+
+                    btn.classList.add('active-tab', 'border-blue-500', 'text-blue-600');
+                    btn.classList.remove('text-gray-500', 'border-transparent');
+
+                    panels.forEach(panel => {
+                        panel.classList.toggle('hidden', panel.id !== `tab-${tab}`);
+                    });
+
+                    if (tab === 'prepared_by') {
+                        loadConfigs('prepared_by');
+                    } else if (tab === 'approved_by') {
+                        loadConfigs('approved_by');
+                    } else if (tab === 'contractor') {
+                        loadConfigs('contractor');
+                    } else if (tab === 'name_of_work') {
+                        loadConfigs('name_of_work');
+                    }
+                });
+            });
+        }
+
+        async function loadConfigs(configType) {
+            try {
+                const res = await fetch(`/api/admin/config/${configType}`);
+                if (!res.ok) {
+                    throw new Error('Failed to load configurations');
+                }
+                const data = await res.json();
+
+                if (configType === 'prepared_by') {
+                    renderProfileTable('prepared-table-body', data, 'prepared');
+                } else if (configType === 'approved_by') {
+                    renderProfileTable('approved-table-body', data, 'approved');
+                } else if (configType === 'contractor') {
+                    renderContractorTable('contractor-table-body', data);
+                } else if (configType === 'name_of_work') {
+                    renderWorkTable('work-table-body', data);
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('Failed to load configurations', 'error');
+            }
+        }
+
+        function renderProfileTable(tbodyId, configs, prefix) {
+            const tbody = document.getElementById(tbodyId);
+            tbody.innerHTML = '';
+            configs.forEach(cfg => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${cfg.name || ''}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${cfg.designation || ''}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                        <button class="text-indigo-600 hover:text-indigo-900 mr-4"
+                                onclick="editProfile('${prefix}', ${cfg.id}, '${(cfg.name || '').replace(/'/g, "\\'")}', '${(cfg.designation || '').replace(/'/g, "\\'")}')">
+                            Edit
+                        </button>
+                        <button class="text-red-600 hover:text-red-900"
+                                onclick="deleteConfig(${cfg.id})">
+                            Delete
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderContractorTable(tbodyId, configs) {
+            const tbody = document.getElementById(tbodyId);
+            tbody.innerHTML = '';
+            configs.forEach(cfg => {
+                const name = cfg.contractor_name || cfg.config_value || '';
+                const safeName = name.replace(/'/g, "\\'");
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                        <button class="text-indigo-600 hover:text-indigo-900 mr-4"
+                                onclick="editContractor(${cfg.id}, '${safeName}')">
+                            Edit
+                        </button>
+                        <button class="text-red-600 hover:text-red-900"
+                                onclick="deleteConfig(${cfg.id})">
+                            Delete
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderWorkTable(tbodyId, configs) {
+            const tbody = document.getElementById(tbodyId);
+            tbody.innerHTML = '';
+            configs.forEach(cfg => {
+                const name = cfg.work_name || cfg.value || cfg.config_value || '';
+                const safeName = name.replace(/'/g, "\\'");
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                        <button class="text-indigo-600 hover:text-indigo-900 mr-4"
+                                onclick="editWork(${cfg.id}, '${safeName}')">
+                            Edit
+                        </button>
+                        <button class="text-red-600 hover:text-red-900"
+                                onclick="deleteConfig(${cfg.id})">
+                            Delete
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function deleteConfig(id) {
+            if (!confirm('Are you sure you want to delete this item?')) return;
+            try {
+                if (!csrfToken) {
+                    await fetchCsrfToken();
+                }
+                const res = await fetch(`/api/admin/config/delete/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-Token': csrfToken || ''
+                    }
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showMessage(result.message || 'Deleted successfully');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showMessage(result.message || 'Delete failed', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('Error deleting configuration', 'error');
+            }
+        }
+
+        function resetProfileForm(prefix) {
+            document.getElementById(`${prefix}-config-id`).value = '';
+            document.getElementById(`${prefix}-name`).value = '';
+            document.getElementById(`${prefix}-designation`).value = '';
+            document.getElementById(`${prefix}-submit-btn`).textContent = 'Add Profile';
+            document.getElementById(`${prefix}-submit-btn`).classList.remove('bg-green-600', 'hover:bg-green-700');
+            document.getElementById(`${prefix}-submit-btn`).classList.add('bg-blue-600', 'hover:bg-blue-700');
+            document.getElementById(`${prefix}-cancel-btn`).classList.add('hidden');
+        }
+
+        function editProfile(prefix, id, name, designation) {
+            document.getElementById(`${prefix}-config-id`).value = id;
+            document.getElementById(`${prefix}-name`).value = name;
+            document.getElementById(`${prefix}-designation`).value = designation;
+            const btn = document.getElementById(`${prefix}-submit-btn`);
+            btn.textContent = 'Update Profile';
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btn.classList.add('bg-green-600', 'hover:bg-green-700');
+            document.getElementById(`${prefix}-cancel-btn`).classList.remove('hidden');
+        }
+
+        function resetContractorForm() {
+            document.getElementById('contractor-config-id').value = '';
+            document.getElementById('contractor-name').value = '';
+            const btn = document.getElementById('contractor-submit-btn');
+            btn.textContent = 'Add Contractor';
+            btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            document.getElementById('contractor-cancel-btn').classList.add('hidden');
+        }
+
+        function resetWorkForm() {
+            document.getElementById('work-config-id').value = '';
+            document.getElementById('work-name').value = '';
+            const btn = document.getElementById('work-submit-btn');
+            btn.textContent = 'Add Name of Work';
+            btn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            btn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            document.getElementById('work-cancel-btn').classList.add('hidden');
+        }
+
+        function editContractor(id, name) {
+            document.getElementById('contractor-config-id').value = id;
+            document.getElementById('contractor-name').value = name;
+            const btn = document.getElementById('contractor-submit-btn');
+            btn.textContent = 'Update Contractor';
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btn.classList.add('bg-green-600', 'hover:bg-green-700');
+            document.getElementById('contractor-cancel-btn').classList.remove('hidden');
+        }
+
+        function editWork(id, name) {
+            document.getElementById('work-config-id').value = id;
+            document.getElementById('work-name').value = name;
+            const btn = document.getElementById('work-submit-btn');
+            btn.textContent = 'Update Name of Work';
+            btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            btn.classList.add('bg-green-600', 'hover:bg-green-700');
+            document.getElementById('work-cancel-btn').classList.remove('hidden');
+        }
+
+        async function submitConfig(event, configType, prefix) {
+            event.preventDefault();
+            const id = document.getElementById(`${prefix}-config-id`).value;
+            const name = document.getElementById(`${prefix}-name`).value.trim();
+            const designation = document.getElementById(`${prefix}-designation`).value.trim();
+
+            if (!name || !designation) {
+                showMessage('Name and designation are required', 'error');
+                return;
+            }
+
+            const payload = {
+                config_type: configType,
+                name,
+                designation
+            };
+
+            const url = id
+                ? `/api/admin/config/update/${id}`
+                : '/api/admin/config/add';
+
+            try {
+                if (!csrfToken) {
+                    await fetchCsrfToken();
+                }
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken || ''
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showMessage(result.message || 'Saved successfully');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showMessage(result.message || 'Save failed', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('Error saving configuration', 'error');
+            }
+        }
+
+        async function submitContractor(event) {
+            event.preventDefault();
+            const id = document.getElementById('contractor-config-id').value;
+            const name = document.getElementById('contractor-name').value.trim();
+
+            if (!name) {
+                showMessage('Contractor name is required', 'error');
+                return;
+            }
+
+            const payload = {
+                config_type: 'contractor',
+                contractor_name: name
+            };
+
+            const url = id
+                ? `/api/admin/config/update/${id}`
+                : '/api/admin/config/add';
+
+            try {
+                if (!csrfToken) {
+                    await fetchCsrfToken();
+                }
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken || ''
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showMessage(result.message || 'Saved successfully');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showMessage(result.message || 'Save failed', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('Error saving contractor', 'error');
+            }
+        }
+
+        async function submitWork(event) {
+            event.preventDefault();
+            const id = document.getElementById('work-config-id').value;
+            const name = document.getElementById('work-name').value.trim();
+
+            if (!name) {
+                showMessage('Name of work is required', 'error');
+                return;
+            }
+
+            const payload = {
+                config_type: 'name_of_work',
+                work_name: name
+            };
+
+            const url = id
+                ? `/api/admin/config/update/${id}`
+                : '/api/admin/config/add';
+
+            try {
+                if (!csrfToken) {
+                    await fetchCsrfToken();
+                }
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken || ''
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showMessage(result.message || 'Saved successfully');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showMessage(result.message || 'Save failed', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('Error saving name of work', 'error');
+            }
+        }
+
+        async function handleLogout(event) {
+            event.preventDefault();
+            try {
+                if (!csrfToken) {
+                    await fetchCsrfToken();
+                }
+                const res = await fetch('/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken || ''
+                    },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = '/login';
+                } else {
+                    showMessage(data.message || 'Logout failed', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showMessage('Logout request failed', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchCsrfToken();
+            setupTabs();
+
+            // Initial load for default tab
+            loadConfigs('prepared_by');
+
+            // Forms
+            document.getElementById('prepared-form').addEventListener('submit', (e) =>
+                submitConfig(e, 'prepared_by', 'prepared')
+            );
+            document.getElementById('approved-form').addEventListener('submit', (e) =>
+                submitConfig(e, 'approved_by', 'approved')
+            );
+            document.getElementById('contractor-form').addEventListener('submit', submitContractor);
+            document.getElementById('work-form').addEventListener('submit', submitWork);
+
+            // Cancel buttons
+            document.getElementById('prepared-cancel-btn').addEventListener('click', () =>
+                resetProfileForm('prepared')
+            );
+            document.getElementById('approved-cancel-btn').addEventListener('click', () =>
+                resetProfileForm('approved')
+            );
+            document.getElementById('contractor-cancel-btn').addEventListener('click', resetContractorForm);
+            document.getElementById('work-cancel-btn').addEventListener('click', resetWorkForm);
+
+            // Logout
+            const logoutForm = document.getElementById('logout-form');
+            logoutForm.addEventListener('submit', handleLogout);
+        });
+    </script>
+</body>
+</html>
+
+

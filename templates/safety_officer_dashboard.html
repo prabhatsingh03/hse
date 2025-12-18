@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Safety Officer Dashboard</title>
+    <link rel="icon" href="https://www.simonindia.com/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<header class="bg-white shadow-sm">
+    <div class="max-w-6xl mx-auto flex items-center justify-between py-4 px-4">
+        <div class="flex items-center space-x-3">
+            <img src="{{ url_for('static', filename='images/simonindia_logo.png') }}" alt="Simon India Limited" class="w-24 h-auto">
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">Safety Officer Dashboard</h1>
+                <p class="text-sm text-gray-500">Monthly HSE Reporting</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-6 text-sm">
+            <div class="relative">
+                <button id="notificationBtn" class="relative p-2 rounded-full hover:bg-gray-100">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1"/>
+                    </svg>
+                    <span id="notificationBadge"
+                          class="hidden absolute -top-0.5 -right-0.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-semibold"></span>
+                </button>
+                <div id="notificationPanel"
+                     class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-100 z-20">
+                    <div class="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-gray-700">Notifications</span>
+                        <span id="notificationCountLabel" class="text-[11px] text-gray-400">0 new</span>
+                    </div>
+                    <div id="notificationList" class="max-h-80 overflow-y-auto text-xs">
+                        <div class="px-3 py-3 text-gray-500 text-center text-xs">
+                            No notifications yet.
+                        </div>
+                    </div>
+                    <div class="px-3 py-2 border-t border-gray-100 text-right">
+                        <span class="text-[11px] text-gray-400 cursor-default">View all (coming soon)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <p class="font-semibold text-gray-800">{{ user.full_name }}</p>
+                <p class="text-gray-500">{{ user.email }}</p>
+            </div>
+            <button id="logoutBtn" class="px-3 py-1.5 rounded-md bg-red-500 text-white text-xs font-semibold hover:bg-red-600">
+                Logout
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+    <!-- Navigation Cards -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <a href="/safety_officer/form"
+           class="block bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl p-5 shadow hover:shadow-lg transition">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold">Create New Report</h2>
+                    <p class="text-sm text-blue-100 mt-1">Start a new Monthly HSE report</p>
+                </div>
+                <div class="text-3xl font-bold">+</div>
+            </div>
+        </a>
+
+        <div class="bg-white rounded-xl p-5 shadow border border-gray-100 flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-800">My Reports</h2>
+                <p class="text-sm text-gray-500 mt-1">Reports submitted by you</p>
+            </div>
+            <div class="text-right">
+                <p id="reportsCount" class="text-3xl font-bold text-blue-600">0</p>
+                <p class="text-xs text-gray-400 mt-1">Total reports</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reports Table -->
+    <section class="bg-white rounded-xl shadow border border-gray-100">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+            <h3 class="text-base font-semibold text-gray-800">My HSE Reports</h3>
+            <span id="reportsStatus" class="text-xs text-gray-500"></span>
+        </div>
+
+        <div id="emptyState" class="p-8 text-center hidden">
+            <p class="text-gray-600 mb-3">No reports submitted yet. Create your first report!</p>
+            <a href="/safety_officer/form" class="inline-flex items-center px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">
+                Create New Report
+            </a>
+        </div>
+
+        <div id="tableContainer" class="overflow-x-auto">
+            <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 text-gray-600">
+                <tr>
+                    <th class="px-3 py-2 text-left font-medium">Report No.</th>
+                    <th class="px-3 py-2 text-left font-medium">Month / Year</th>
+                    <th class="px-3 py-2 text-left font-medium">Name of Work</th>
+                    <th class="px-3 py-2 text-left font-medium">Contractor</th>
+                    <th class="px-3 py-2 text-left font-medium">Status</th>
+                    <th class="px-3 py-2 text-left font-medium">Submitted</th>
+                    <th class="px-3 py-2 text-left font-medium">Actions</th>
+                </tr>
+                </thead>
+                <tbody id="reportsBody" class="divide-y divide-gray-100 bg-white">
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<!-- View Modal -->
+<div id="viewModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[92vh] overflow-hidden mx-4">
+        <!-- Modal Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 id="viewModalTitle" class="text-lg font-bold">Report Details</h3>
+                    <p id="viewModalSubtitle" class="text-sm text-blue-100 mt-1"></p>
+                </div>
+                <button id="closeViewModal" class="text-white hover:text-blue-200 text-3xl font-light leading-none">&times;</button>
+            </div>
+        </div>
+        <!-- Modal Content -->
+        <div class="p-6 overflow-y-auto max-h-[75vh]">
+            <div id="viewModalContent" class="space-y-6">
+                <!-- Filled dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const reportsBody = document.getElementById('reportsBody');
+    const reportsCount = document.getElementById('reportsCount');
+    const reportsStatus = document.getElementById('reportsStatus');
+    const emptyState = document.getElementById('emptyState');
+    const tableContainer = document.getElementById('tableContainer');
+    const viewModal = document.getElementById('viewModal');
+    const viewModalContent = document.getElementById('viewModalContent');
+    const viewModalTitle = document.getElementById('viewModalTitle');
+    const viewModalSubtitle = document.getElementById('viewModalSubtitle');
+    const closeViewModalBtn = document.getElementById('closeViewModal');
+
+    function statusBadge(status, rejectionComment) {
+        const s = (status || '').toLowerCase();
+        if (s === 'approved') {
+            return '<span class="bg-green-100 text-green-800 px-2 py-0.5 rounded text-xs font-medium">✓ Approved</span>';
+        }
+        if (s === 'rejected') {
+            const title = rejectionComment ? ` title="${rejectionComment.replace(/"/g, '&quot;')}"` : '';
+            const icon = '<span class="ml-1 text-red-600" title="Report rejected">&#9888;</span>';
+            return `<span class="bg-red-100 text-red-800 px-2 py-0.5 rounded text-xs font-medium"${title}>✗ Rejected</span>${icon}`;
+        }
+        return '<span class="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-xs font-medium">Pending Review</span>';
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString();
+    }
+
+    async function loadReports() {
+        try {
+            reportsStatus.textContent = 'Loading...';
+            const res = await fetch('/api/hse/reports');
+            if (!res.ok) throw new Error('Failed to load reports');
+            const reports = await res.json();
+
+            reportsCount.textContent = reports.length;
+            reportsBody.innerHTML = '';
+
+            if (!reports.length) {
+                emptyState.classList.remove('hidden');
+                tableContainer.classList.add('hidden');
+                reportsStatus.textContent = 'No reports found.';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+
+            reports.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50';
+                const submitted = r.created_at ? formatDate(r.created_at) : '-';
+                const monthYear = r.month && r.year ? `${r.month} ${r.year}` : '-';
+
+                const canEdit = (r.status || '').toLowerCase() === 'rejected';
+                const isApproved = (r.status || '').toLowerCase() === 'approved';
+
+                tr.innerHTML = `
+                    <td class="px-3 py-2 whitespace-nowrap font-medium text-gray-800">${r.report_number || '-'}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-gray-700">${monthYear}</td>
+                    <td class="px-3 py-2 text-gray-700">${r.name_of_work || '-'}</td>
+                    <td class="px-3 py-2 text-gray-700">${r.contractor_name || '-'}</td>
+                    <td class="px-3 py-2">
+                        ${statusBadge(r.status, r.rejection_comment)}
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap text-gray-600">${submitted}</td>
+                    <td class="px-3 py-2 whitespace-nowrap">
+                        <div class="flex items-center space-x-2">
+                            <button data-action="view" data-id="${r.id}"
+                                    class="px-2 py-1 text-xs rounded bg-blue-50 text-blue-700 hover:bg-blue-100">
+                                View
+                            </button>
+                            ${canEdit ? `
+                            <button data-action="edit" data-id="${r.id}"
+                                    class="px-2 py-1 text-xs rounded bg-yellow-50 text-yellow-800 hover:bg-yellow-100">
+                                Edit
+                            </button>` : ''}
+                            ${isApproved ? `
+                            <button data-action="download" data-id="${r.id}"
+                                    class="px-2 py-1 text-xs rounded bg-green-50 text-green-800 hover:bg-green-100">
+                                Download PDF
+                            </button>` : ''}
+                        </div>
+                    </td>
+                `;
+                reportsBody.appendChild(tr);
+            });
+
+            reportsStatus.textContent = `${reports.length} report(s) loaded`;
+        } catch (err) {
+            console.error(err);
+            reportsStatus.textContent = 'Failed to load reports.';
+        }
+    }
+
+    async function openViewModal(reportId) {
+        try {
+            viewModalContent.innerHTML = `
+                <div class="flex items-center justify-center py-12">
+                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+                    <span class="ml-3 text-gray-500">Loading report details...</span>
+                </div>
+            `;
+            viewModal.classList.remove('hidden');
+
+            const res = await fetch(`/api/hse/report/${encodeURIComponent(reportId)}`);
+            if (!res.ok) throw new Error('Failed to load report');
+            const r = await res.json();
+
+            const monthYear = r.month && r.year ? `${r.month} ${r.year}` : '-';
+            viewModalTitle.textContent = `Report ${r.report_number || ''}`;
+            viewModalSubtitle.textContent = `${monthYear} • ${r.name_of_work || ''} • ${r.contractor_name || ''}`;
+
+            const data = r.report_data || {};
+
+            // Status badge helper
+            const getStatusBadge = (status) => {
+                const s = (status || '').toLowerCase();
+                if (s === 'approved') return '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">✓ Approved</span>';
+                if (s === 'rejected') return '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">✗ Rejected</span>';
+                return '<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">⏳ Pending Review</span>';
+            };
+
+            // Helper for numeric rows
+            const makeNumericRow = (sno, label, key, isCritical = false) => {
+                const item = data[key] || {};
+                const current = item.current != null ? item.current : '-';
+                const cumulative = item.cumulative != null ? item.cumulative : '-';
+                const rowClass = isCritical ? 'bg-red-50' : (sno % 2 === 0 ? 'bg-gray-50' : 'bg-white');
+                return `
+                    <tr class="${rowClass} hover:bg-blue-50 transition-colors">
+                        <td class="px-3 py-2 text-center text-gray-500 font-medium">${sno}</td>
+                        <td class="px-3 py-2 text-gray-700">${label}</td>
+                        <td class="px-3 py-2 text-center font-medium text-gray-800">${current}</td>
+                        <td class="px-3 py-2 text-center font-medium text-blue-700 bg-blue-50">${cumulative}</td>
+                    </tr>
+                `;
+            };
+
+            // Helper for Yes/No rows
+            const makeYesNoRow = (sno, label, key) => {
+                const item = data[key] || {};
+                const current = item.current || '-';
+                const cumulative = item.cumulative || '-';
+                const isYesCurrent = current.toLowerCase() === 'yes';
+                const isYesCumulative = cumulative.toLowerCase() === 'yes';
+                const rowClass = sno % 2 === 0 ? 'bg-gray-50' : 'bg-white';
+                return `
+                    <tr class="${rowClass} hover:bg-blue-50 transition-colors">
+                        <td class="px-3 py-2 text-center text-gray-500 font-medium">${sno}</td>
+                        <td class="px-3 py-2 text-gray-700">${label}</td>
+                        <td class="px-3 py-2 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isYesCurrent ? 'bg-green-100 text-green-800' : (current === '-' ? 'bg-gray-100 text-gray-500' : 'bg-red-100 text-red-800')}">
+                                ${current === '-' ? '-' : (isYesCurrent ? '✓ Yes' : '✗ No')}
+                            </span>
+                        </td>
+                        <td class="px-3 py-2 text-center bg-blue-50">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isYesCumulative ? 'bg-green-100 text-green-800' : (cumulative === '-' ? 'bg-gray-100 text-gray-500' : 'bg-red-100 text-red-800')}">
+                                ${cumulative === '-' ? '-' : (isYesCumulative ? '✓ Yes' : '✗ No')}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            };
+
+            // Calculate summary values
+            const safeManhours = data.safe_manhours?.cumulative || 0;
+            const totalLti = (data.fatalities?.cumulative || 0) + (data.other_lti?.cumulative || 0);
+            const freqRate = data.frequency_rate?.current || 0;
+            const sevRate = data.severity_rate?.current || 0;
+            const pendingNcs = data.pending_ncs?.current || 0;
+
+            viewModalContent.innerHTML = `
+                <!-- Report Metadata Section -->
+                <div class="bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl p-5 border border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Report Number</p>
+                                <p class="text-base font-bold text-gray-800">${r.report_number || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Month / Year</p>
+                                <p class="text-base font-medium text-gray-800">${monthYear}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Name of Work</p>
+                                <p class="text-sm text-gray-800">${r.name_of_work || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Contractor</p>
+                                <p class="text-sm text-gray-800">${r.contractor_name || '-'}</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status Date</p>
+                                <p class="text-sm text-gray-800">${formatDate(r.status_date)}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</p>
+                                ${getStatusBadge(r.status)}
+                            </div>
+                        </div>
+                    </div>
+                    ${r.rejection_comment ? `
+                    <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p class="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">Rejection Comment</p>
+                        <p class="text-sm text-red-800">${r.rejection_comment}</p>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <!-- Key Metrics Summary -->
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div class="bg-white rounded-lg p-4 border border-gray-200 text-center shadow-sm">
+                        <p class="text-xs font-semibold text-gray-500 uppercase">Safe Man-hours</p>
+                        <p class="text-2xl font-bold text-blue-600">${safeManhours.toLocaleString()}</p>
+                        <p class="text-xs text-gray-400">Cumulative</p>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border ${totalLti > 0 ? 'border-red-300 bg-red-50' : 'border-gray-200'} text-center shadow-sm">
+                        <p class="text-xs font-semibold text-gray-500 uppercase">LTI Count</p>
+                        <p class="text-2xl font-bold ${totalLti > 0 ? 'text-red-600' : 'text-green-600'}">${totalLti}</p>
+                        <p class="text-xs text-gray-400">${totalLti === 0 ? 'Zero LTI ✓' : 'Incidents'}</p>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200 text-center shadow-sm">
+                        <p class="text-xs font-semibold text-gray-500 uppercase">Frequency Rate</p>
+                        <p class="text-2xl font-bold text-gray-800">${freqRate}</p>
+                        <p class="text-xs text-gray-400">Per 10L hrs</p>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200 text-center shadow-sm">
+                        <p class="text-xs font-semibold text-gray-500 uppercase">Severity Rate</p>
+                        <p class="text-2xl font-bold text-gray-800">${sevRate}</p>
+                        <p class="text-xs text-gray-400">Per 10L hrs</p>
+                    </div>
+                    <div class="bg-white rounded-lg p-4 border ${pendingNcs > 5 ? 'border-orange-300 bg-orange-50' : 'border-gray-200'} text-center shadow-sm">
+                        <p class="text-xs font-semibold text-gray-500 uppercase">Pending NCs</p>
+                        <p class="text-2xl font-bold ${pendingNcs > 5 ? 'text-orange-600' : (pendingNcs === 0 ? 'text-green-600' : 'text-yellow-600')}">${pendingNcs}</p>
+                        <p class="text-xs text-gray-400">${pendingNcs === 0 ? 'All closed ✓' : 'Open items'}</p>
+                    </div>
+                </div>
+
+                ${r.remarks ? `
+                <!-- Safety Officer Remarks -->
+                <div class="bg-teal-50 rounded-xl p-5 border border-teal-200">
+                    <div class="flex items-center mb-3">
+                        <svg class="w-5 h-5 text-teal-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                        </svg>
+                        <h4 class="text-sm font-semibold text-teal-800">Safety Officer Remarks</h4>
+                    </div>
+                    <p class="text-sm text-teal-900 whitespace-pre-wrap">${r.remarks}</p>
+                </div>
+                ` : ''}
+
+                <!-- HSE Monitoring Parameters -->
+                <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <div class="bg-purple-600 text-white px-4 py-3">
+                        <h4 class="text-sm font-semibold flex items-center">
+                            <span class="bg-white text-purple-600 rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">1</span>
+                            HSE Monitoring Parameters
+                        </h4>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-3 py-2 text-center font-semibold text-gray-600 w-12">S.No</th>
+                                    <th class="px-3 py-2 text-left font-semibold text-gray-600">Monitoring Parameter</th>
+                                    <th class="px-3 py-2 text-center font-semibold text-gray-600 w-28">Current</th>
+                                    <th class="px-3 py-2 text-center font-semibold text-blue-700 bg-blue-100 w-28">Cumulative</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                ${makeNumericRow(1, 'Average number of Staff & Workmen', 'staff_workmen')}
+                                ${makeNumericRow(2, 'Total Safe Man-hours worked', 'safe_manhours')}
+                                ${makeNumericRow(3, 'Number of Induction programmes conducted', 'induction')}
+                                ${makeNumericRow(4, 'Number of HSE meetings organized at site', 'hse_meetings')}
+                                ${makeNumericRow(5, 'Number of HSE awareness programmes conducted at site', 'hse_awareness')}
+                                ${makeNumericRow(6, 'Number of Tool Box Talks conducted', 'toolbox_talks')}
+                                ${makeNumericRow(7, 'Number of Loss Time Injuries - Fatalities', 'fatalities', true)}
+                                ${makeNumericRow(8, 'Number of Loss Time Injuries - Other LTI', 'other_lti', true)}
+                                ${makeNumericRow(9, 'Number of Non disabling injury (Non-LTI)', 'non_disabling')}
+                                ${makeNumericRow(10, 'Number of First Aid Cases', 'first_aid')}
+                                ${makeNumericRow(11, 'Number of Near Miss Incidents', 'near_miss')}
+                                ${makeNumericRow(12, 'Number of Dangerous Occurrences', 'dangerous_occurrences')}
+                                ${makeNumericRow(13, 'No. of unsafe acts/practices detected', 'unsafe_acts')}
+                                ${makeNumericRow(14, 'No. of disciplinary actions taken against staff/workmen', 'disciplinary_actions')}
+                                ${makeNumericRow(15, 'Man-days lost due to injury', 'mandays_lost')}
+                                ${makeNumericRow(16, 'LTI Free man-hours (from Last LTI)', 'lti_free')}
+                                ${makeNumericRow(17, 'Frequency Rate (per 10 lacs man-hours)', 'frequency_rate')}
+                                ${makeNumericRow(18, 'Severity Rate (per 10 lacs man-hours)', 'severity_rate')}
+                                ${makeNumericRow(19, 'No. of activities for which JSA/HIRA Completed', 'jsa_hira')}
+                                ${makeNumericRow(20, 'No. of incentives/awards given', 'incentives')}
+                                ${makeNumericRow(21, 'No. of occasions on which penalty imposed', 'penalty')}
+                                ${makeNumericRow(22, 'No. of Audits conducted', 'audits')}
+                                ${makeNumericRow(23, 'No. of pending NCs in above Audits', 'pending_ncs')}
+                                ${makeNumericRow(24, 'Compensation cases raised with Insurance', 'compensation_raised')}
+                                ${makeNumericRow(25, 'Compensation cases resolved and paid', 'compensation_resolved')}
+                                ${makeNumericRow(26, 'No. of Vehicular Accident cases', 'vehicular_accidents')}
+                                ${makeNumericRow(27, 'No. of fire/Explosion cases', 'fire_explosion')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Compliance Checklist -->
+                <div class="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <div class="bg-yellow-500 text-white px-4 py-3">
+                        <h4 class="text-sm font-semibold flex items-center">
+                            <span class="bg-white text-yellow-600 rounded-full w-6 h-6 flex items-center justify-center text-xs mr-2">2</span>
+                            Compliance Checklist
+                        </h4>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-3 py-2 text-center font-semibold text-gray-600 w-12">S.No</th>
+                                    <th class="px-3 py-2 text-left font-semibold text-gray-600">Compliance Parameter</th>
+                                    <th class="px-3 py-2 text-center font-semibold text-gray-600 w-28">Current</th>
+                                    <th class="px-3 py-2 text-center font-semibold text-blue-700 bg-blue-100 w-28">Cumulative</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                ${makeYesNoRow(28, 'Whether workmen compensation policy taken', 'workmen_compensation')}
+                                ${makeYesNoRow(29, 'Whether workmen compensation policy is valid', 'compensation_valid')}
+                                ${makeYesNoRow(30, 'Whether workmen registered under ESI Act', 'esi_registered')}
+                                ${makeYesNoRow(31, 'Whether HIRAC Register prepared and updated', 'hirac_register')}
+                                ${makeYesNoRow(32, 'Whether Environment Aspect Impact Register updated', 'environment_register')}
+                                ${makeYesNoRow(33, 'Whether Legal Register prepared and updated', 'legal_register')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Submission Info -->
+                <div class="bg-gray-50 rounded-xl p-4 border border-gray-200 text-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Submitted On</p>
+                            <p class="text-gray-800">${formatDate(r.created_at)}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Updated</p>
+                            <p class="text-gray-800">${r.updated_at ? formatDate(r.updated_at) : '-'}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } catch (err) {
+            console.error(err);
+            viewModalContent.innerHTML = `
+                <div class="text-center py-12">
+                    <svg class="w-12 h-12 text-red-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p class="text-red-600 font-medium">Failed to load report details.</p>
+                    <p class="text-gray-500 text-sm mt-1">Please try again later.</p>
+                </div>
+            `;
+        }
+    }
+
+    function closeViewModal() {
+        viewModal.classList.add('hidden');
+    }
+
+    reportsBody.addEventListener('click', e => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const id = btn.getAttribute('data-id');
+        const action = btn.getAttribute('data-action');
+        if (!id) return;
+
+        if (action === 'view') {
+            openViewModal(id);
+        } else if (action === 'edit') {
+            window.location.href = `/safety_officer/form?report_id=${encodeURIComponent(id)}`;
+        } else if (action === 'download') {
+            downloadHsePdf(id);
+        }
+    });
+
+    async function downloadHsePdf(reportId) {
+        try {
+            const res = await fetch(`/api/hse/download/${encodeURIComponent(reportId)}`);
+            if (!res.ok) {
+                let message = 'PDF download failed.';
+                try {
+                    const data = await res.json();
+                    if (data && data.error) {
+                        message = data.error;
+                    }
+                } catch (e) {
+                    // ignore JSON parse errors
+                }
+                alert(message);
+                return;
+            }
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // Extract filename from Content-Disposition header
+            const contentDisposition = res.headers.get('Content-Disposition');
+            let filename = `HSE_Report_${reportId}.pdf`;
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+                if (filenameMatch) {
+                    filename = filenameMatch[1];
+                }
+            }
+            a.download = filename;
+            
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Failed to download PDF', err);
+            alert('PDF download failed due to a network error.');
+        }
+    }
+
+    closeViewModalBtn.addEventListener('click', closeViewModal);
+    viewModal.addEventListener('click', e => {
+        if (e.target === viewModal) closeViewModal();
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        try {
+            const csrfRes = await fetch('/api/auth/csrf-token');
+            const csrfData = await csrfRes.json();
+            await fetch('/logout', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': csrfData.csrf_token
+                }
+            });
+            window.location.href = '/login';
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    const notificationBtn = document.getElementById('notificationBtn');
+    const notificationPanel = document.getElementById('notificationPanel');
+    const notificationBadge = document.getElementById('notificationBadge');
+    const notificationList = document.getElementById('notificationList');
+    const notificationCountLabel = document.getElementById('notificationCountLabel');
+
+    function formatRelativeTime(timestamp) {
+        if (!timestamp && timestamp !== 0) return '';
+        const now = Date.now();
+        const ts = typeof timestamp === 'number' ? timestamp * 1000 : Date.parse(timestamp);
+        if (isNaN(ts)) return '';
+        const diffMs = now - ts;
+        const diffSec = Math.floor(diffMs / 1000);
+        if (diffSec < 60) return 'Just now';
+        const diffMin = Math.floor(diffSec / 60);
+        if (diffMin < 60) return diffMin + ' min ago';
+        const diffHr = Math.floor(diffMin / 60);
+        if (diffHr < 24) return diffHr + ' hour' + (diffHr > 1 ? 's' : '') + ' ago';
+        const diffDay = Math.floor(diffHr / 24);
+        return diffDay + ' day' + (diffDay > 1 ? 's' : '') + ' ago';
+    }
+
+    async function loadNotifications() {
+        try {
+            const res = await fetch('/api/hse/notifications');
+            if (!res.ok) throw new Error('Failed');
+            const data = await res.json();
+            const items = data.notifications || [];
+            const unread = data.unread_count || 0;
+
+            if (unread > 0) {
+                notificationBadge.classList.remove('hidden');
+                notificationBadge.textContent = unread > 99 ? '99+' : unread;
+                notificationCountLabel.textContent = `${unread} new`;
+            } else {
+                notificationBadge.classList.add('hidden');
+                notificationCountLabel.textContent = '0 new';
+            }
+
+            if (!items.length) {
+                notificationList.innerHTML = '<div class="px-3 py-3 text-gray-500 text-center text-xs">No notifications yet.</div>';
+                return;
+            }
+
+            notificationList.innerHTML = '';
+            items.forEach(n => {
+                const li = document.createElement('div');
+                li.className = 'px-3 py-2 border-b border-gray-50 hover:bg-gray-50 cursor-pointer';
+                const tsText = formatRelativeTime(n.created_at);
+                li.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div class="text-[11px] text-gray-800 mr-2">${n.message || ''}</div>
+                        <div class="text-[10px] text-gray-400 whitespace-nowrap ml-2">${tsText}</div>
+                    </div>
+                    ${n.report_id ? `<div class="mt-1 text-[11px] text-blue-600 hover:underline">View report</div>` : ''}
+                `;
+                li.addEventListener('click', async () => {
+                    try {
+                        const csrfRes = await fetch('/api/auth/csrf-token');
+                        const csrfData = await csrfRes.json();
+                        await fetch('/api/hse/notifications/mark_read', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': csrfData.csrf_token
+                            },
+                            body: JSON.stringify({ ids: [n.id] })
+                        });
+                    } catch (e) {
+                        console.error('Failed to mark notification read', e);
+                    }
+                    if (n.report_id) {
+                        // Close notification panel and open read-only view modal instead of editable form
+                        notificationPanel.classList.add('hidden');
+                        openViewModal(n.report_id);
+                    }
+                });
+                notificationList.appendChild(li);
+            });
+        } catch (e) {
+            console.error('Failed to load notifications', e);
+        }
+    }
+
+    notificationBtn.addEventListener('click', async () => {
+        const isHidden = notificationPanel.classList.contains('hidden');
+        if (isHidden) {
+            notificationPanel.classList.remove('hidden');
+            try {
+                const csrfRes = await fetch('/api/auth/csrf-token');
+                const csrfData = await csrfRes.json();
+                await fetch('/api/hse/notifications/mark_read', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfData.csrf_token
+                    },
+                    body: JSON.stringify({ all: true })
+                });
+                // Refresh notifications to update unread count/badge
+                await loadNotifications();
+            } catch (e) {
+                console.error('Failed to mark all notifications read', e);
+            }
+        } else {
+            notificationPanel.classList.add('hidden');
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!notificationPanel.contains(e.target) && !notificationBtn.contains(e.target)) {
+            notificationPanel.classList.add('hidden');
+        }
+    });
+
+    loadReports();
+    loadNotifications();
+    setInterval(loadNotifications, 60000);
+})();
+</script>
+
+</body>
+</html>
+
+

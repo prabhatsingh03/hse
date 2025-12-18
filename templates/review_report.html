@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review HSE Report</title>
+    <link rel="icon" href="https://www.simonindia.com/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<header class="bg-white shadow-sm">
+    <div class="max-w-6xl mx-auto flex items-center justify-between py-4 px-4">
+        <div class="flex items-center space-x-3">
+            <a href="/project_manager/dashboard" class="text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M15 19l-7-7 7-7"/>
+                </svg>
+                Dashboard
+            </a>
+            <span class="text-gray-400 text-sm">/</span>
+            <span class="text-sm text-gray-600">Review Report</span>
+        </div>
+        <div class="flex items-center space-x-6 text-sm">
+            <div class="text-right">
+                <p class="font-semibold text-gray-800">{{ user.full_name }}</p>
+                <p class="text-gray-500">{{ user.email }}</p>
+            </div>
+            <button id="logoutBtn" class="px-3 py-1.5 rounded-md bg-red-500 text-white text-xs font-semibold hover:bg-red-600">
+                Logout
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-6 pb-44">
+    <!-- Report metadata -->
+    <section class="bg-white rounded-xl p-5 shadow border border-gray-100 mb-5">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h1 class="text-lg font-semibold text-gray-800" id="metaReportNumber">Report -</h1>
+                <p class="text-sm text-gray-500" id="metaNameOfWork"></p>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs text-gray-600">
+                <div>
+                    <p class="font-semibold text-gray-700">Month / Year</p>
+                    <p id="metaMonthYear">-</p>
+                </div>
+                <div>
+                    <p class="font-semibold text-gray-700">Contractor</p>
+                    <p id="metaContractor">-</p>
+                </div>
+                <div>
+                    <p class="font-semibold text-gray-700">Status Date</p>
+                    <p id="metaStatusDate">-</p>
+                </div>
+                <div>
+                    <p class="font-semibold text-gray-700">Prepared By</p>
+                    <p id="metaPreparedBy">-</p>
+                </div>
+                <div>
+                    <p class="font-semibold text-gray-700">Status</p>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                        Pending Review
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Safety Officer Remarks Section -->
+    <section id="remarksSection" class="bg-white rounded-xl p-5 shadow border border-gray-100 mb-5" style="display: none;">
+        <h2 class="text-base font-semibold text-gray-800 mb-3 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+            </svg>
+            Safety Officer Remarks
+        </h2>
+        <div id="remarksContent" class="text-sm text-gray-700 bg-teal-50 p-4 rounded-lg border border-teal-200 whitespace-pre-wrap"></div>
+    </section>
+
+    <!-- HSE Parameters table -->
+    <section class="bg-white rounded-xl p-5 shadow border border-gray-100">
+        <h2 class="text-base font-semibold text-gray-800 mb-3">HSE Parameters (Read Only)</h2>
+        <div class="overflow-x-auto border rounded-lg">
+            <table class="min-w-full text-xs">
+                <thead class="bg-gray-50 text-gray-600">
+                <tr>
+                    <th class="px-3 py-2 text-left font-medium w-10">#</th>
+                    <th class="px-3 py-2 text-left font-medium">Parameter</th>
+                    <th class="px-3 py-2 text-center font-medium w-28">Current</th>
+                    <th class="px-3 py-2 text-center font-medium w-28">Cumulative</th>
+                </tr>
+                </thead>
+                <tbody id="paramsBody" class="bg-white divide-y divide-gray-100"></tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<!-- Fixed action bar -->
+<div class="fixed inset-x-0 bottom-0 bg-white border-t border-gray-200 shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div class="flex-1">
+            <label for="rejectionComment" class="block text-xs font-semibold text-gray-700 mb-1">
+                Rejection Comment (required only if rejecting)
+            </label>
+            <textarea id="rejectionComment"
+                      class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm h-20 resize-none"
+                      placeholder="Provide clear and actionable feedback for the Safety Officer"></textarea>
+        </div>
+        <div class="flex items-center justify-end gap-2 md:w-72">
+            <button id="backBtn"
+                    class="px-3 py-2 rounded-md border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                Back to Dashboard
+            </button>
+            <button id="rejectBtn"
+                    class="px-3 py-2 rounded-md bg-red-100 text-red-700 text-xs font-semibold hover:bg-red-200">
+                Reject Report
+            </button>
+            <button id="approveBtn"
+                    class="px-3 py-2 rounded-md bg-green-600 text-white text-xs font-semibold hover:bg-green-700">
+                Approve Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const reportId = {{ report_id }};
+
+    const metaReportNumber = document.getElementById('metaReportNumber');
+    const metaNameOfWork = document.getElementById('metaNameOfWork');
+    const metaMonthYear = document.getElementById('metaMonthYear');
+    const metaContractor = document.getElementById('metaContractor');
+    const metaStatusDate = document.getElementById('metaStatusDate');
+    const metaPreparedBy = document.getElementById('metaPreparedBy');
+    const paramsBody = document.getElementById('paramsBody');
+    const remarksSection = document.getElementById('remarksSection');
+    const remarksContent = document.getElementById('remarksContent');
+    const rejectionCommentEl = document.getElementById('rejectionComment');
+    const approveBtn = document.getElementById('approveBtn');
+    const rejectBtn = document.getElementById('rejectBtn');
+    const backBtn = document.getElementById('backBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    let csrfToken = null;
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '-';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString();
+    }
+
+    function formatParameterValue(value) {
+        if (value === null || value === undefined || value === '') return '-';
+        return value;
+    }
+
+    function buildRow(index, label, key, data) {
+        const item = data[key] || {};
+        const current = formatParameterValue(item.current);
+        const cumulative = formatParameterValue(item.cumulative);
+        const row = document.createElement('tr');
+        if (index % 2 === 0) {
+            row.className = 'bg-gray-50';
+        }
+        row.innerHTML = `
+            <td class="px-3 py-1.5 text-gray-500">${index}</td>
+            <td class="px-3 py-1.5 text-gray-800">${label}</td>
+            <td class="px-3 py-1.5 text-center text-gray-800">${current}</td>
+            <td class="px-3 py-1.5 text-center text-gray-800 bg-green-50">${cumulative}</td>
+        `;
+        return row;
+    }
+
+    async function loadReportDetails() {
+        try {
+            paramsBody.innerHTML = `
+                <tr><td colspan="4" class="px-3 py-3 text-center text-gray-500">Loading report details...</td></tr>
+            `;
+            const res = await fetch(`/api/hse/report/${encodeURIComponent(reportId)}`);
+            if (!res.ok) throw new Error('Failed to load report');
+            const r = await res.json();
+
+            const monthYear = r.month && r.year ? `${r.month} ${r.year}` : '-';
+            metaReportNumber.textContent = `Report ${r.report_number || '-'}`;
+            metaNameOfWork.textContent = r.name_of_work || '-';
+            metaMonthYear.textContent = monthYear;
+            metaContractor.textContent = r.contractor_name || '-';
+            metaStatusDate.textContent = formatDate(r.status_date);
+
+            // Prepared by info: prefer name/email when available
+            if (r.prepared_by_name) {
+                const parts = [r.prepared_by_name];
+                if (r.prepared_by_email) {
+                    parts.push(`(${r.prepared_by_email})`);
+                }
+                metaPreparedBy.textContent = parts.join(' ');
+            } else if (r.prepared_by_id) {
+                metaPreparedBy.textContent = `User ID #${r.prepared_by_id}`;
+            } else {
+                metaPreparedBy.textContent = '-';
+            }
+
+            // Display Safety Officer remarks if present
+            if (r.remarks && r.remarks.trim()) {
+                remarksContent.textContent = r.remarks;
+                remarksSection.style.display = 'block';
+            } else {
+                remarksSection.style.display = 'none';
+            }
+
+            const data = r.report_data || {};
+            paramsBody.innerHTML = '';
+
+            const rows = [
+                ['Average number of Staff & Workmen', 'staff_workmen'],
+                ['Total Safe Man-hours worked', 'safe_manhours'],
+                ['Number of Induction programmes conducted', 'induction'],
+                ['Number of HSE meetings organized at site', 'hse_meetings'],
+                ['Number of HSE awareness programmes conducted at site', 'hse_awareness'],
+                ['Number of Tool Box Talks conducted', 'toolbox_talks'],
+                ['Fatalities', 'fatalities'],
+                ['Other LTI', 'other_lti'],
+                ['Non disabling injury (Non-LTI)', 'non_disabling'],
+                ['First Aid Cases', 'first_aid'],
+                ['Near Miss Incidents', 'near_miss'],
+                ['Dangerous Occurrences', 'dangerous_occurrences'],
+                ['Unsafe acts / practices detected', 'unsafe_acts'],
+                ['Disciplinary actions taken', 'disciplinary_actions'],
+                ['Man-days lost due to injury', 'mandays_lost'],
+                ['LTI Free man-hours', 'lti_free'],
+                ['Frequency Rate', 'frequency_rate'],
+                ['Severity Rate', 'severity_rate'],
+                ['JSA / HIRA completed', 'jsa_hira'],
+                ['Incentives / awards', 'incentives'],
+                ['Penalties', 'penalty'],
+                ['Audits conducted', 'audits'],
+                ['Pending NCs', 'pending_ncs'],
+                ['Compensation cases raised', 'compensation_raised'],
+                ['Compensation cases resolved', 'compensation_resolved'],
+                ['Vehicular accidents', 'vehicular_accidents'],
+                ['Fire / Explosion cases', 'fire_explosion'],
+                ['Workmen compensation policy taken', 'workmen_compensation'],
+                ['Workmen compensation policy valid', 'compensation_valid'],
+                ['ESI registered', 'esi_registered'],
+                ['HIRAC Register updated', 'hirac_register'],
+                ['Environment Register updated', 'environment_register'],
+                ['Legal Register updated', 'legal_register']
+            ];
+
+            rows.forEach((item, idx) => {
+                const [label, key] = item;
+                paramsBody.appendChild(buildRow(idx + 1, label, key, data));
+            });
+        } catch (e) {
+            console.error(e);
+            paramsBody.innerHTML = `
+                <tr><td colspan="4" class="px-3 py-3 text-center text-red-600 text-xs">Failed to load report details.</td></tr>
+            `;
+        }
+    }
+
+    async function ensureCsrfToken() {
+        if (csrfToken) return csrfToken;
+        const res = await fetch('/api/auth/csrf-token');
+        const data = await res.json();
+        csrfToken = data.csrf_token;
+        return csrfToken;
+    }
+
+    async function approveReport() {
+        if (!confirm('Are you sure you want to approve this report?')) return;
+        try {
+            approveBtn.disabled = true;
+            rejectBtn.disabled = true;
+            const token = await ensureCsrfToken();
+            const res = await fetch(`/api/hse/approve/${encodeURIComponent(reportId)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': token
+                },
+                body: JSON.stringify({})
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok || body.success === false) {
+                const msg = body.message || body.error || 'Failed to approve report';
+                throw new Error(msg);
+            }
+            alert(body.message || 'Report approved successfully.');
+            window.location.href = '/project_manager/dashboard';
+        } catch (e) {
+            console.error(e);
+            alert(e.message || 'Failed to approve report.');
+        } finally {
+            approveBtn.disabled = false;
+            rejectBtn.disabled = false;
+        }
+    }
+
+    async function rejectReport() {
+        const comment = (rejectionCommentEl.value || '').trim();
+        if (!comment || comment.length < 10) {
+            alert('Please provide a rejection comment of at least 10 characters.');
+            rejectionCommentEl.focus();
+            return;
+        }
+        if (!confirm('Are you sure you want to reject this report?')) return;
+        try {
+            approveBtn.disabled = true;
+            rejectBtn.disabled = true;
+            const token = await ensureCsrfToken();
+            const res = await fetch(`/api/hse/reject/${encodeURIComponent(reportId)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': token
+                },
+                body: JSON.stringify({ rejection_comment: comment })
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok || body.success === false) {
+                const msg = body.message || body.error || 'Failed to reject report';
+                throw new Error(msg);
+            }
+            alert(body.message || 'Report rejected successfully.');
+            window.location.href = '/project_manager/dashboard';
+        } catch (e) {
+            console.error(e);
+            alert(e.message || 'Failed to reject report.');
+        } finally {
+            approveBtn.disabled = false;
+            rejectBtn.disabled = false;
+        }
+    }
+
+    backBtn.addEventListener('click', () => {
+        window.location.href = '/project_manager/dashboard';
+    });
+
+    approveBtn.addEventListener('click', approveReport);
+    rejectBtn.addEventListener('click', rejectReport);
+
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            const csrfRes = await fetch('/api/auth/csrf-token');
+            const csrfData = await csrfRes.json();
+            await fetch('/logout', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': csrfData.csrf_token
+                }
+            });
+            window.location.href = '/login';
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    loadReportDetails();
+})();
+</script>
+
+</body>
+</html>
+
+
