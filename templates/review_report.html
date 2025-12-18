@@ -47,6 +47,10 @@
                     <p id="metaMonthYear">-</p>
                 </div>
                 <div>
+                    <p class="font-semibold text-gray-700">Project Code</p>
+                    <p id="metaProjectCode">-</p>
+                </div>
+                <div>
                     <p class="font-semibold text-gray-700">Contractor</p>
                     <p id="metaContractor">-</p>
                 </div>
@@ -133,6 +137,7 @@
     const metaReportNumber = document.getElementById('metaReportNumber');
     const metaNameOfWork = document.getElementById('metaNameOfWork');
     const metaMonthYear = document.getElementById('metaMonthYear');
+    const metaProjectCode = document.getElementById('metaProjectCode');
     const metaContractor = document.getElementById('metaContractor');
     const metaStatusDate = document.getElementById('metaStatusDate');
     const metaPreparedBy = document.getElementById('metaPreparedBy');
@@ -145,6 +150,28 @@
     const backBtn = document.getElementById('backBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     let csrfToken = null;
+    let projectsMap = {}; // Store projects for name lookup
+
+    async function loadProjectsConfig() {
+        try {
+            const res = await fetch('/api/hse/config');
+            if (!res.ok) return;
+            const data = await res.json();
+            (data.projects || []).forEach(p => {
+                if (p.project_code) {
+                    projectsMap[p.project_code] = p.project_name || '';
+                }
+            });
+        } catch (e) {
+            console.error('Failed to load projects config', e);
+        }
+    }
+
+    function getProjectDisplay(projectCode) {
+        if (!projectCode) return '-';
+        const projectName = projectsMap[projectCode] || '';
+        return projectName ? `${projectCode} - ${projectName}` : projectCode;
+    }
 
     function formatDate(dateStr) {
         if (!dateStr) return '-';
@@ -188,6 +215,7 @@
             metaReportNumber.textContent = `Report ${r.report_number || '-'}`;
             metaNameOfWork.textContent = r.name_of_work || '-';
             metaMonthYear.textContent = monthYear;
+            metaProjectCode.textContent = getProjectDisplay(r.project_code);
             metaContractor.textContent = r.contractor_name || '-';
             metaStatusDate.textContent = formatDate(r.status_date);
 
@@ -360,7 +388,10 @@
         }
     });
 
-    loadReportDetails();
+    // Load projects first, then load report details
+    loadProjectsConfig().then(() => {
+        loadReportDetails();
+    });
 })();
 </script>
 

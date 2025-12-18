@@ -47,9 +47,15 @@
             </h3>
             <div class="grid grid-cols-2 gap-6">
                 <div class="form-group">
-                    <label class="form-label required">Name of Work</label>
+                    <label class="form-label required">Project Code</label>
+                    <select id="project_code" class="form-input" required>
+                        <option value="">Select Project Code</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label required">Name of Location</label>
                     <select id="name_of_work" class="form-input" required>
-                        <option value="">Select Name of Work</option>
+                        <option value="">Select Name of Location</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -609,6 +615,10 @@
                 <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Report Information</h4>
                 <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
+                        <p class="text-gray-500 text-xs">Project Code</p>
+                        <p id="confirmProjectCode" class="font-semibold text-gray-800">-</p>
+                    </div>
+                    <div>
                         <p class="text-gray-500 text-xs">Report Number</p>
                         <p id="confirmReportNumber" class="font-semibold text-gray-800">-</p>
                     </div>
@@ -617,7 +627,7 @@
                         <p id="confirmMonthYear" class="font-semibold text-gray-800">-</p>
                     </div>
                     <div>
-                        <p class="text-gray-500 text-xs">Name of Work</p>
+                        <p class="text-gray-500 text-xs">Name of Location</p>
                         <p id="confirmNameOfWork" class="font-semibold text-gray-800">-</p>
                     </div>
                     <div>
@@ -793,6 +803,7 @@ select.table-input {
 (function () {
     const workSelect = document.getElementById('name_of_work');
     const contractorSelect = document.getElementById('contractor_name');
+    const projectCodeSelect = document.getElementById('project_code');
     const preparedBySelect = document.getElementById('prepared_by_id');
     const approvedBySelect = document.getElementById('approved_by_id');
     const monthInput = document.getElementById('report_month');
@@ -887,6 +898,14 @@ select.table-input {
                 opt.textContent = c.contractor_name;
                 contractorSelect.appendChild(opt);
             });
+
+            // Populate Project Code dropdown
+            (config.projects || []).forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.project_code;
+                opt.textContent = `${p.project_code} - ${p.project_name}`;
+                projectCodeSelect.appendChild(opt);
+            });
         } catch (err) {
             console.error(err);
             formMessage.textContent = 'Failed to load dropdown configuration.';
@@ -897,8 +916,17 @@ select.table-input {
     async function loadPreviousCumulative(monthValue) {
         previousCumulativeData = {};
         if (!monthValue) return;
+        
+        // Require project_code to load previous cumulative data
+        const projectCode = projectCodeSelect.value;
+        if (!projectCode) {
+            // Clear stale cumulative values when no project is selected
+            recalculateAllCumulative();
+            return;
+        }
+        
         try {
-            const url = `/api/hse/previous_month?month=${encodeURIComponent(monthValue)}`;
+            const url = `/api/hse/previous_month?month=${encodeURIComponent(monthValue)}&project_code=${encodeURIComponent(projectCode)}`;
             const res = await fetch(url);
             if (!res.ok) throw new Error('Failed to load previous month data');
             previousCumulativeData = await res.json() || {};
@@ -1063,6 +1091,7 @@ select.table-input {
         formMessage.textContent = '';
         formMessage.className = 'text-sm mt-2';
 
+        const projectCode = projectCodeSelect.value.trim();
         const nameOfWork = workSelect.value.trim();
         const monthVal = monthInput.value;
         const contractorName = contractorSelect.value;
@@ -1071,13 +1100,14 @@ select.table-input {
         const remarksValue = document.getElementById('remarks').value.trim();
 
         // Validate required fields
-        if (!nameOfWork || !monthVal || !contractorName || !statusDate) {
+        if (!projectCode || !nameOfWork || !monthVal || !contractorName || !statusDate) {
             formMessage.textContent = 'Please fill in all required fields before submitting.';
             formMessage.className = 'text-sm mt-2 text-red-600';
             return;
         }
 
         // Populate confirmation modal with report details
+        document.getElementById('confirmProjectCode').textContent = projectCode;
         document.getElementById('confirmReportNumber').textContent = reportNumber || 'Will be auto-generated';
         document.getElementById('confirmMonthYear').textContent = formatMonthYear(monthVal);
         document.getElementById('confirmNameOfWork').textContent = nameOfWork;
@@ -1133,6 +1163,7 @@ select.table-input {
     }
 
     async function handleSubmit() {
+        const projectCode = projectCodeSelect.value.trim();
         const nameOfWork = workSelect.value.trim();
         const monthVal = monthInput.value;
         const contractorName = contractorSelect.value;
@@ -1143,6 +1174,7 @@ select.table-input {
         const year = parseInt(yearStr, 10);
 
         const payload = {
+            project_code: projectCode,
             month: monthVal,
             year: year,
             name_of_work: nameOfWork,
@@ -1203,6 +1235,7 @@ select.table-input {
             const report = await res.json();
 
             // Set selected Name of Work (will match one of the configured options)
+            projectCodeSelect.value = report.project_code || '';
             workSelect.value = report.name_of_work || '';
             contractorSelect.value = report.contractor_name || '';
             document.getElementById('status_date').value = report.status_date || '';
@@ -1246,9 +1279,13 @@ select.table-input {
         const ym = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
         if (!monthInput.value) monthInput.value = ym;
 
-        // Check if month already has a report
-        await checkMonthExists(monthInput.value);
-        await loadPreviousCumulative(monthInput.value);
+        // Only check month/load cumulative if project is already selected (edit mode)
+        // For new reports, user must select project first
+        if (projectCodeSelect.value) {
+            await checkMonthExists(monthInput.value);
+            await loadPreviousCumulative(monthInput.value);
+        }
+        
         await loadEditReportIfNeeded();
     }
 
@@ -1262,6 +1299,17 @@ select.table-input {
         monthWarningMessage.style.display = 'none';
         monthWarningMessage.innerHTML = '';
 
+        // Require project_code to check month existence
+        const projectCode = projectCodeSelect.value;
+        if (!projectCode) {
+            // No project selected - enable submit and allow editing
+            openConfirmBtn.disabled = false;
+            openConfirmBtn.style.opacity = '1';
+            openConfirmBtn.style.cursor = 'pointer';
+            setMonitoringReadOnly(false);
+            return;
+        }
+
         const [yearStr, monthStr] = monthValue.split('-');
         const year = parseInt(yearStr, 10);
         const month = parseInt(monthStr, 10);
@@ -1269,7 +1317,7 @@ select.table-input {
         if (!year || !month) return;
         
         try {
-            const res = await fetch(`/api/hse/check_month?month=${encodeURIComponent(monthValue)}&year=${year}`);
+            const res = await fetch(`/api/hse/check_month?month=${encodeURIComponent(monthValue)}&year=${year}&project_code=${encodeURIComponent(projectCode)}`);
             const data = await res.json();
             
             if (data.exists) {
@@ -1317,7 +1365,7 @@ select.table-input {
 
             // Additionally check for any previous unapproved reports to show warning with month details
             try {
-                const unapprovedRes = await fetch(`/api/hse/unapproved_before?month=${encodeURIComponent(monthValue)}&year=${year}`);
+                const unapprovedRes = await fetch(`/api/hse/unapproved_before?month=${encodeURIComponent(monthValue)}&year=${year}&project_code=${encodeURIComponent(projectCode)}`);
                 const unapprovedData = await unapprovedRes.json();
                 if (unapprovedRes.ok && unapprovedData.has_unapproved && Array.isArray(unapprovedData.reports) && unapprovedData.reports.length > 0) {
                     const details = unapprovedData.reports
@@ -1354,6 +1402,56 @@ select.table-input {
                 console.error('Error checking previous unapproved reports:', err);
             }
 
+            // Check for reports that exist AFTER the selected month for this project
+            // This prevents filling earlier months when later months already have data
+            try {
+                const laterReportsRes = await fetch(`/api/hse/reports_after?month=${encodeURIComponent(monthValue)}&year=${year}&project_code=${encodeURIComponent(projectCode)}`);
+                const laterReportsData = await laterReportsRes.json();
+                if (laterReportsRes.ok && laterReportsData.has_later_reports && Array.isArray(laterReportsData.reports) && laterReportsData.reports.length > 0) {
+                    const details = laterReportsData.reports
+                        .map(r => {
+                            const m = (r.month || '').toString();
+                            const y = r.year != null ? r.year : '';
+                            const s = (r.status || '').toString().toLowerCase();
+                            const rn = r.report_number || '';
+                            const statusLabel = s ? ` (${s})` : '';
+                            const rnLabel = rn ? ` - ${rn}` : '';
+                            return `${m} ${y}${statusLabel}${rnLabel}`.trim();
+                        })
+                        .join(', ');
+
+                    const laterReportsHtml = `
+                        <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded mt-2">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-red-500 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-red-800">
+                                        <strong>⛔ Cannot submit for this month:</strong> Report(s) for later month(s) already exist: ${details}.<br>
+                                        Filling earlier months would cause discrepancy in Cumulative Numbers.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    monthWarningMessage.innerHTML += laterReportsHtml;
+                    monthWarningMessage.style.display = 'block';
+
+                    // Disable submit button when later reports exist
+                    openConfirmBtn.disabled = true;
+                    openConfirmBtn.style.opacity = '0.6';
+                    openConfirmBtn.style.cursor = 'not-allowed';
+
+                    // Make monitoring parameters read-only
+                    setMonitoringReadOnly(true);
+                }
+            } catch (err) {
+                console.error('Error checking later reports:', err);
+            }
+
             // Show auto-generated report number only when there are no warnings
             const hasWarning =
                 monthWarningMessage.style.display !== 'none' &&
@@ -1373,8 +1471,18 @@ select.table-input {
 
     monthInput.addEventListener('change', async e => {
         const monthValue = e.target.value;
-        await checkMonthExists(monthValue);
-        loadPreviousCumulative(monthValue);
+        if (projectCodeSelect.value) {
+            await checkMonthExists(monthValue);
+            await loadPreviousCumulative(monthValue);
+        }
+    });
+
+    // Re-validate when project selection changes
+    projectCodeSelect.addEventListener('change', async () => {
+        if (monthInput.value) {
+            await checkMonthExists(monthInput.value);
+            await loadPreviousCumulative(monthInput.value);
+        }
     });
 
     // Open confirmation modal when clicking submit button

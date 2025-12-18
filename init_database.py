@@ -172,7 +172,8 @@ def create_tables():
             """
             CREATE TABLE IF NOT EXISTS hse_reports (
                 id INT PRIMARY KEY AUTO_INCREMENT,
-                report_number VARCHAR(50) UNIQUE NOT NULL,
+                report_number VARCHAR(50) NOT NULL,
+                project_code VARCHAR(50) NOT NULL,
                 month VARCHAR(20) NOT NULL,
                 year INT NOT NULL,
                 name_of_work VARCHAR(255) NOT NULL,
@@ -192,7 +193,9 @@ def create_tables():
                 INDEX idx_prepared_by (prepared_by_id),
                 INDEX idx_approved_by (approved_by_id),
                 INDEX idx_contractor (contractor_name),
-                UNIQUE KEY uniq_user_month_year (prepared_by_id, month, year),
+                INDEX idx_project_code (project_code),
+                INDEX idx_project_month_year (project_code, month, year),
+                UNIQUE KEY uniq_project_month_year (project_code, month, year),
                 CONSTRAINT fk_prepared_by
                     FOREIGN KEY (prepared_by_id) REFERENCES users(id)
                     ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -221,6 +224,107 @@ def create_tables():
 
         # Migration: Add remarks column to hse_reports if it doesn't exist
         _add_column_if_not_exists(cursor, "hse_reports", "remarks", "TEXT AFTER rejection_comment")
+
+        # Migration: Add project_code column to hse_reports if it doesn't exist
+        _add_column_if_not_exists(cursor, "hse_reports", "project_code", "VARCHAR(50) NOT NULL DEFAULT '' AFTER report_number")
+
+        # Migration: Update unique constraint from (prepared_by_id, month, year) to (project_code, month, year)
+        # Check if old constraint exists and drop it
+        cursor.execute("""
+            SELECT COUNT(*) AS cnt
+            FROM information_schema.TABLE_CONSTRAINTS
+            WHERE TABLE_SCHEMA = %s 
+              AND TABLE_NAME = 'hse_reports' 
+              AND CONSTRAINT_NAME = 'uniq_user_month_year'
+        """, (DB_NAME,))
+        result = cursor.fetchone()
+        if result and result[0] > 0:
+            cursor.execute("ALTER TABLE hse_reports DROP INDEX uniq_user_month_year")
+            print("Dropped old constraint 'uniq_user_month_year'")
+
+        # Check if new constraint exists, if not create it
+        cursor.execute("""
+            SELECT COUNT(*) AS cnt
+            FROM information_schema.TABLE_CONSTRAINTS
+            WHERE TABLE_SCHEMA = %s 
+              AND TABLE_NAME = 'hse_reports' 
+              AND CONSTRAINT_NAME = 'uniq_project_month_year'
+        """, (DB_NAME,))
+        result = cursor.fetchone()
+        if result and result[0] == 0:
+            # Before adding unique constraint, check for rows with blank project_code
+            # that would cause duplicates on (project_code, month, year)
+            cursor.execute("""
+                SELECT COUNT(*) AS cnt
+                FROM hse_reports
+                WHERE project_code = '' OR project_code IS NULL
+            """)
+            blank_count = cursor.fetchone()
+            if blank_count and blank_count[0] > 0:
+                # Check for potential duplicates among rows with blank project_code
+                cursor.execute("""
+                    SELECT project_code, month, year, COUNT(*) AS cnt
+                    FROM hse_reports
+                    WHERE project_code = '' OR project_code IS NULL
+                    GROUP BY project_code, month, year
+                    HAVING COUNT(*) > 1
+                """)
+                duplicates = cursor.fetchall()
+                if duplicates:
+                    print("WARNING: Cannot add unique constraint 'uniq_project_month_year' - duplicate (project_code, month, year) found for blank project_code rows:")
+                    for dup in duplicates:
+                        print(f"  - project_code='{dup[0]}', month='{dup[1]}', year={dup[2]}, count={dup[3]}")
+                    print("Please manually assign project_code values to these rows before running migration again.")
+                else:
+                    # No duplicates among blank rows, safe to add constraint
+                    # But warn about blank project_code rows that need manual attention
+                    print(f"WARNING: {blank_count[0]} row(s) have blank project_code. These will need project_code assigned.")
+                    print("Adding unique constraint - no duplicates detected among blank project_code rows.")
+                    cursor.execute("ALTER TABLE hse_reports ADD UNIQUE KEY uniq_project_month_year (project_code, month, year)")
+                    print("Added new constraint 'uniq_project_month_year'")
+            else:
+                # No rows with blank project_code, safe to add constraint
+                cursor.execute("ALTER TABLE hse_reports ADD UNIQUE KEY uniq_project_month_year (project_code, month, year)")
+                print("Added new constraint 'uniq_project_month_year'")
+
+        # Migration: Add index for project_code if it doesn't exist
+        cursor.execute("""
+            SELECT COUNT(*) AS cnt
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = %s 
+              AND TABLE_NAME = 'hse_reports' 
+              AND INDEX_NAME = 'idx_project_code'
+        """, (DB_NAME,))
+        result = cursor.fetchone()
+        if result and result[0] == 0:
+            cursor.execute("ALTER TABLE hse_reports ADD INDEX idx_project_code (project_code)")
+            print("Added index 'idx_project_code'")
+
+        # Migration: Add composite index for project_code, month, year if it doesn't exist
+        cursor.execute("""
+            SELECT COUNT(*) AS cnt
+            FROM information_schema.STATISTICS
+            WHERE TABLE_SCHEMA = %s 
+              AND TABLE_NAME = 'hse_reports' 
+              AND INDEX_NAME = 'idx_project_month_year'
+        """, (DB_NAME,))
+        result = cursor.fetchone()
+        if result and result[0] == 0:
+            cursor.execute("ALTER TABLE hse_reports ADD INDEX idx_project_month_year (project_code, month, year)")
+            print("Added index 'idx_project_month_year'")
+
+        # Migration: Drop unique constraint on report_number if it exists (allow same report_number for different projects)
+        cursor.execute("""
+            SELECT COUNT(*) AS cnt
+            FROM information_schema.TABLE_CONSTRAINTS
+            WHERE TABLE_SCHEMA = %s 
+              AND TABLE_NAME = 'hse_reports' 
+              AND CONSTRAINT_NAME = 'report_number'
+        """, (DB_NAME,))
+        result = cursor.fetchone()
+        if result and result[0] > 0:
+            cursor.execute("ALTER TABLE hse_reports DROP INDEX report_number")
+            print("Dropped unique constraint on 'report_number'")
 
         conn.commit()
 

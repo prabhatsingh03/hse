@@ -18,6 +18,10 @@
             </div>
         </div>
         <div class="flex items-center space-x-6 text-sm">
+            <a href="/project_manager/analytics" 
+               class="px-4 py-2 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition">
+                Analytics
+            </a>
             <div class="text-right">
                 <p class="font-semibold text-gray-800">{{ user.full_name }}</p>
                 <p class="text-gray-500">{{ user.email }}</p>
@@ -31,7 +35,7 @@
 
 <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
     <!-- Stats cards -->
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white rounded-xl p-5 shadow border border-gray-100 flex items-center justify-between">
             <div>
                 <h2 class="text-sm font-semibold text-gray-600">Pending Reports</h2>
@@ -67,6 +71,20 @@
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                </svg>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-5 shadow border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-lg transition"
+             onclick="window.location.href='/project_manager/analytics'">
+            <div>
+                <h2 class="text-sm font-semibold text-gray-600">Project Analytics</h2>
+                <p class="mt-1 text-sm text-gray-500">View cumulative metrics</p>
+            </div>
+            <div class="text-green-500">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
             </div>
         </div>
@@ -163,8 +181,9 @@
                 <thead class="bg-gray-50 text-gray-600">
                 <tr>
                     <th class="px-3 py-2 text-left font-medium">Report No.</th>
+                    <th class="px-3 py-2 text-left font-medium">Project Code</th>
                     <th class="px-3 py-2 text-left font-medium">Month / Year</th>
-                    <th class="px-3 py-2 text-left font-medium">Name of Work</th>
+                    <th class="px-3 py-2 text-left font-medium">Name of Location</th>
                     <th class="px-3 py-2 text-left font-medium">Contractor</th>
                     <th class="px-3 py-2 text-left font-medium">Prepared By</th>
                     <th class="px-3 py-2 text-left font-medium">Submitted Date</th>
@@ -200,6 +219,7 @@
     const tabApproved = document.getElementById('tabApproved');
 
     let currentStatus = 'pending'; // 'pending' or 'approved'
+    let projectsMap = {}; // Store projects for name lookup
 
     function formatDate(dateStr) {
         if (!dateStr) return '-';
@@ -219,9 +239,21 @@
                 opt.textContent = c.contractor_name;
                 filterContractor.appendChild(opt);
             });
+            // Store projects for name lookup
+            (data.projects || []).forEach(p => {
+                if (p.project_code) {
+                    projectsMap[p.project_code] = p.project_name || '';
+                }
+            });
         } catch (e) {
             console.error('Failed to load contractors', e);
         }
+    }
+
+    function getProjectDisplay(projectCode) {
+        if (!projectCode) return '-';
+        const projectName = projectsMap[projectCode] || '';
+        return projectName ? `${projectCode} - ${projectName}` : projectCode;
     }
 
     async function loadNotificationsSummary() {
@@ -278,9 +310,11 @@
                 tr.className = 'hover:bg-gray-50';
                 const monthYear = r.month && r.year ? `${r.month} ${r.year}` : '-';
                 const submitted = r.created_at ? formatDate(r.created_at) : '-';
+                const projectDisplay = getProjectDisplay(r.project_code);
 
                 tr.innerHTML = `
                     <td class="px-3 py-2 whitespace-nowrap font-medium text-gray-800">${r.report_number || '-'}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-gray-700">${projectDisplay}</td>
                     <td class="px-3 py-2 whitespace-nowrap text-gray-700">${monthYear}</td>
                     <td class="px-3 py-2 text-gray-700">${r.name_of_work || '-'}</td>
                     <td class="px-3 py-2 text-gray-700">${r.contractor_name || '-'}</td>

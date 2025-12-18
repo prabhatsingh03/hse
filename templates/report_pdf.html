@@ -291,7 +291,14 @@
         </tr>
 
         <tr>
-            <td class="meta-label">Name of Work</td>
+            <td class="meta-label">Project Code</td>
+            <td><span class="meta-value">{{ report.project_code or '-' }}</span></td>
+            <td class="meta-label">Project Name</td>
+            <td><span class="meta-value">{{ project_name or '-' }}</span></td>
+        </tr>
+
+        <tr>
+            <td class="meta-label">Name of Location</td>
             <td><span class="meta-value">{{ report.name_of_work or '-' }}</span></td>
             <td class="meta-label">Contractor Name</td>
             <td><span class="meta-value">{{ report.contractor_name or '-' }}</span></td>

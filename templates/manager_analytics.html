@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Analytics</title>
+    <link rel="icon" href="https://www.simonindia.com/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<header class="bg-white shadow-sm">
+    <div class="max-w-6xl mx-auto flex items-center justify-between py-4 px-4">
+        <div class="flex items-center space-x-3">
+            <img src="{{ url_for('static', filename='images/simonindia_logo.png') }}" alt="Simon India Limited" class="w-24 h-auto">
+            <div>
+                <h1 class="text-xl font-bold text-gray-800">Manager Analytics</h1>
+                <p class="text-sm text-gray-500">Project Cumulative Metrics</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-6 text-sm">
+            <a href="/project_manager/dashboard" 
+               class="px-4 py-2 rounded-md bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition">
+                ← Back to Dashboard
+            </a>
+            <div class="text-right">
+                <p class="font-semibold text-gray-800">{{ user.full_name }}</p>
+                <p class="text-gray-500">{{ user.email }}</p>
+            </div>
+            <button id="logoutBtn" class="relative px-3 py-1.5 rounded-md bg-red-500 text-white text-xs font-semibold hover:bg-red-600">
+                Logout
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+    <!-- Project Selector Section -->
+    <section class="bg-white rounded-xl p-5 shadow border border-gray-100">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Select Project</h2>
+        <div class="flex flex-wrap items-end gap-4">
+            <div class="flex-1 min-w-[280px]">
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Project Code</label>
+                <select id="projectSelector" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <option value="">-- Select a Project --</option>
+                </select>
+            </div>
+            <button id="viewAnalyticsBtn"
+                    class="px-5 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled>
+                View Analytics
+            </button>
+        </div>
+    </section>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="hidden">
+        <section class="bg-white rounded-xl p-8 shadow border border-gray-100 text-center">
+            <div class="inline-flex items-center text-gray-600">
+                <svg class="w-5 h-5 mr-2 animate-spin text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 12a8 8 0 018-8m0 0v4m0-4l-3 3"/>
+                </svg>
+                Loading analytics...
+            </div>
+        </section>
+    </div>
+
+    <!-- Empty State - No Project Selected -->
+    <div id="emptyState">
+        <section class="bg-white rounded-xl p-8 shadow border border-gray-100 text-center">
+            <div class="text-gray-400 mb-4">
+                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </div>
+            <p class="text-gray-600 text-lg font-medium">Please select a project to view analytics</p>
+            <p class="text-gray-400 text-sm mt-1">Choose a project from the dropdown above to see cumulative metrics</p>
+        </section>
+    </div>
+
+    <!-- No Data State -->
+    <div id="noDataState" class="hidden">
+        <section class="bg-white rounded-xl p-8 shadow border border-gray-100 text-center">
+            <div class="text-yellow-400 mb-4">
+                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+            </div>
+            <p class="text-gray-600 text-lg font-medium">No approved reports found for this project</p>
+            <p class="text-gray-400 text-sm mt-1">Analytics are available only for projects with approved HSE reports</p>
+        </section>
+    </div>
+
+    <!-- Metrics Display Section -->
+    <div id="metricsSection" class="hidden space-y-6">
+        <!-- Report Context -->
+        <section class="bg-blue-50 rounded-xl p-4 shadow border border-blue-100">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-blue-600 font-medium">Showing cumulative data from latest approved report</p>
+                    <p class="text-xs text-blue-500 mt-1">
+                        <span id="reportContext">-</span>
+                    </p>
+                </div>
+                <div class="text-blue-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+            </div>
+        </section>
+
+        <!-- Metrics Cards Grid -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Card 1: Total Safe Man-hours (Blue) -->
+            <div class="bg-white rounded-xl p-5 shadow border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-600">Total Safe Man-hours</h2>
+                        <p class="mt-2 text-3xl font-bold text-blue-600" id="metricSafeManhours">0</p>
+                        <p class="text-xs text-gray-400 mt-1">Cumulative safe working hours</p>
+                    </div>
+                    <div class="text-blue-400 bg-blue-50 p-3 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: LTI Count (Red) -->
+            <div class="bg-white rounded-xl p-5 shadow border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-600">LTI Count</h2>
+                        <p class="mt-2 text-3xl font-bold text-red-600" id="metricLtiCount">0</p>
+                        <p class="text-xs text-gray-400 mt-1">Fatalities + Other LTI (cumulative)</p>
+                    </div>
+                    <div class="text-red-400 bg-red-50 p-3 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Frequency Rate (Yellow) -->
+            <div class="bg-white rounded-xl p-5 shadow border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-600">Frequency Rate</h2>
+                        <p class="mt-2 text-3xl font-bold text-yellow-600" id="metricFrequencyRate">0</p>
+                        <p class="text-xs text-gray-400 mt-1">Cumulative frequency rate</p>
+                    </div>
+                    <div class="text-yellow-400 bg-yellow-50 p-3 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4: Severity Rate (Purple) -->
+            <div class="bg-white rounded-xl p-5 shadow border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-600">Severity Rate</h2>
+                        <p class="mt-2 text-3xl font-bold text-purple-600" id="metricSeverityRate">0</p>
+                        <p class="text-xs text-gray-400 mt-1">Cumulative severity rate</p>
+                    </div>
+                    <div class="text-purple-400 bg-purple-50 p-3 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 5: Pending NCs (Orange) -->
+            <div class="bg-white rounded-xl p-5 shadow border border-gray-100">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-sm font-semibold text-gray-600">Pending NCs</h2>
+                        <p class="mt-2 text-3xl font-bold text-orange-600" id="metricPendingNcs">0</p>
+                        <p class="text-xs text-gray-400 mt-1">Cumulative pending non-conformances</p>
+                    </div>
+                    <div class="text-orange-400 bg-orange-50 p-3 rounded-lg">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden">
+        <section class="bg-white rounded-xl p-8 shadow border border-red-200 text-center">
+            <div class="text-red-400 mb-4">
+                <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <p class="text-gray-600 text-lg font-medium" id="errorMessage">Failed to load analytics</p>
+            <p class="text-gray-400 text-sm mt-1">Please try again or contact support if the issue persists</p>
+        </section>
+    </div>
+</main>
+
+<script>
+(function () {
+    const projectSelector = document.getElementById('projectSelector');
+    const viewAnalyticsBtn = document.getElementById('viewAnalyticsBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    const emptyState = document.getElementById('emptyState');
+    const loadingState = document.getElementById('loadingState');
+    const noDataState = document.getElementById('noDataState');
+    const metricsSection = document.getElementById('metricsSection');
+    const errorState = document.getElementById('errorState');
+    const errorMessage = document.getElementById('errorMessage');
+    const reportContext = document.getElementById('reportContext');
+
+    const metricSafeManhours = document.getElementById('metricSafeManhours');
+    const metricLtiCount = document.getElementById('metricLtiCount');
+    const metricFrequencyRate = document.getElementById('metricFrequencyRate');
+    const metricSeverityRate = document.getElementById('metricSeverityRate');
+    const metricPendingNcs = document.getElementById('metricPendingNcs');
+
+    let projectsMap = {};
+
+    function hideAllStates() {
+        emptyState.classList.add('hidden');
+        loadingState.classList.add('hidden');
+        noDataState.classList.add('hidden');
+        metricsSection.classList.add('hidden');
+        errorState.classList.add('hidden');
+    }
+
+    function showState(stateElement) {
+        hideAllStates();
+        stateElement.classList.remove('hidden');
+    }
+
+    function formatNumber(num) {
+        if (num === null || num === undefined) return '0';
+        if (typeof num === 'number') {
+            // For integers, show without decimals; for floats, show up to 2 decimals
+            if (Number.isInteger(num)) {
+                return num.toLocaleString();
+            } else {
+                return num.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+            }
+        }
+        return String(num);
+    }
+
+    async function loadProjects() {
+        try {
+            const res = await fetch('/api/hse/config');
+            if (!res.ok) throw new Error('Failed to load config');
+            const data = await res.json();
+            
+            (data.projects || []).forEach(p => {
+                if (p.project_code) {
+                    projectsMap[p.project_code] = p.project_name || '';
+                    const opt = document.createElement('option');
+                    opt.value = p.project_code;
+                    opt.textContent = p.project_name 
+                        ? `${p.project_code} - ${p.project_name}` 
+                        : p.project_code;
+                    projectSelector.appendChild(opt);
+                }
+            });
+        } catch (e) {
+            console.error('Failed to load projects', e);
+        }
+    }
+
+    async function loadAnalytics() {
+        const projectCode = projectSelector.value;
+        if (!projectCode) {
+            showState(emptyState);
+            return;
+        }
+
+        showState(loadingState);
+
+        try {
+            const res = await fetch(`/api/hse/project_analytics?project_code=${encodeURIComponent(projectCode)}`);
+            
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || 'Failed to load analytics');
+            }
+
+            const data = await res.json();
+
+            if (!data.has_data) {
+                showState(noDataState);
+                return;
+            }
+
+            // Update report context
+            const latestReport = data.latest_report || {};
+            const projectName = projectsMap[projectCode] || '';
+            const projectDisplay = projectName ? `${projectCode} - ${projectName}` : projectCode;
+            reportContext.textContent = `Report: ${latestReport.report_number || '-'} | ${latestReport.month || '-'} ${latestReport.year || '-'} | Project: ${projectDisplay}`;
+
+            // Update metrics
+            const metrics = data.metrics || {};
+            metricSafeManhours.textContent = formatNumber(metrics.safe_manhours);
+            metricLtiCount.textContent = formatNumber(metrics.lti_count);
+            metricFrequencyRate.textContent = formatNumber(metrics.frequency_rate);
+            metricSeverityRate.textContent = formatNumber(metrics.severity_rate);
+            metricPendingNcs.textContent = formatNumber(metrics.pending_ncs);
+
+            showState(metricsSection);
+        } catch (e) {
+            console.error('Failed to load analytics', e);
+            errorMessage.textContent = e.message || 'Failed to load analytics';
+            showState(errorState);
+        }
+    }
+
+    projectSelector.addEventListener('change', () => {
+        viewAnalyticsBtn.disabled = !projectSelector.value;
+        if (!projectSelector.value) {
+            showState(emptyState);
+        }
+    });
+
+    viewAnalyticsBtn.addEventListener('click', loadAnalytics);
+
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            const csrfRes = await fetch('/api/auth/csrf-token');
+            const csrfData = await csrfRes.json();
+            await fetch('/logout', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': csrfData.csrf_token
+                }
+            });
+            window.location.href = '/login';
+        } catch (err) {
+            console.error(err);
+        }
+    });
+
+    async function init() {
+        await loadProjects();
+        showState(emptyState);
+    }
+
+    init();
+})();
+</script>
+
+</body>
+</html>
+

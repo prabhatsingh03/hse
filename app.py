@@ -783,6 +783,17 @@ def _normalize_config_row(row):
         base.update({"work_name": row["config_value"]})
     elif row["config_type"] == "contractor":
         base.update({"contractor_name": row["config_value"]})
+    elif row["config_type"] == "project":
+        try:
+            value = json.loads(row["config_value"] or "{}")
+        except (json.JSONDecodeError, TypeError):
+            value = {}
+        base.update(
+            {
+                "project_code": value.get("code", ""),
+                "project_name": value.get("name", ""),
+            }
+        )
     else:
         base.update({"value": row["config_value"]})
     return base
@@ -791,7 +802,7 @@ def _normalize_config_row(row):
 @app.route("/api/admin/config/<config_type>", methods=["GET"])
 @require_admin
 def get_admin_configs(config_type):
-    if config_type not in ("prepared_by", "approved_by", "contractor", "name_of_work"):
+    if config_type not in ("prepared_by", "approved_by", "contractor", "name_of_work", "project"):
         return (
             jsonify({"error": "Invalid config type"}),
             400,
@@ -828,13 +839,15 @@ def add_admin_config():
     data = request.get_json(silent=True) or {}
     config_type = (data.get("config_type") or "").strip()
 
-    if config_type not in ("prepared_by", "approved_by", "contractor", "name_of_work"):
+    if config_type not in ("prepared_by", "approved_by", "contractor", "name_of_work", "project"):
         return jsonify({"success": False, "message": "Invalid config_type"}), 400
 
     name = (data.get("name") or "").strip()
     designation = (data.get("designation") or "").strip()
     contractor_name = (data.get("contractor_name") or "").strip()
     work_name = (data.get("work_name") or "").strip()
+    project_code = (data.get("project_code") or "").strip()
+    project_name = (data.get("project_name") or "").strip()
 
     if config_type in ("prepared_by", "approved_by"):
         if not name or not designation:
@@ -860,7 +873,7 @@ def add_admin_config():
                 400,
             )
         config_value = contractor_name
-    else:  # name_of_work
+    elif config_type == "name_of_work":
         if not work_name:
             return (
                 jsonify(
@@ -872,6 +885,18 @@ def add_admin_config():
                 400,
             )
         config_value = work_name
+    elif config_type == "project":
+        if not project_code or not project_name:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Project code and name are required",
+                    }
+                ),
+                400,
+            )
+        config_value = json.dumps({"code": project_code, "name": project_name})
 
     try:
         row = execute_query(
@@ -889,9 +914,12 @@ def add_admin_config():
         elif config_type == "contractor":
             config_key = f"contractor_{next_id}"
             description = "Contractor name"
-        else:  # name_of_work
+        elif config_type == "name_of_work":
             config_key = f"name_of_work_{next_id}"
             description = "Name of work for HSE form dropdown"
+        elif config_type == "project":
+            config_key = f"project_{next_id}"
+            description = "Project code and name for HSE form dropdown"
 
         execute_query(
             """
@@ -980,6 +1008,20 @@ def update_admin_config(config_id):
                     400,
                 )
             new_value = work_name
+        elif config_type == "project":
+            project_code = (data.get("project_code") or "").strip()
+            project_name = (data.get("project_name") or "").strip()
+            if not project_code or not project_name:
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "message": "Project code and name are required",
+                        }
+                    ),
+                    400,
+                )
+            new_value = json.dumps({"code": project_code, "name": project_name})
         else:
             return (
                 jsonify({"success": False, "message": "Unsupported config type"}),
@@ -1045,6 +1087,46 @@ def delete_admin_config(config_id):
                     ),
                     400,
                 )
+        elif config["config_type"] == "project":
+            # Extract project code from JSON
+            try:
+                project_data = json.loads(config["config_value"] or "{}")
+                project_code = project_data.get("code", "")
+            except (json.JSONDecodeError, TypeError):
+                project_code = ""
+
+            if project_code:
+                # Check if project_code column exists in hse_reports before querying
+                col_check = execute_query(
+                    """
+                    SELECT COUNT(*) AS cnt
+                    FROM information_schema.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE()
+                      AND TABLE_NAME = 'hse_reports'
+                      AND COLUMN_NAME = 'project_code'
+                    """,
+                    fetch_one=True,
+                )
+                if col_check and col_check["cnt"] > 0:
+                    ref = execute_query(
+                        """
+                        SELECT COUNT(*) AS count
+                        FROM hse_reports
+                        WHERE project_code = %s
+                        """,
+                        (project_code,),
+                        fetch_one=True,
+                    )
+                    if ref and ref["count"] > 0:
+                        return (
+                            jsonify(
+                                {
+                                    "success": False,
+                                    "message": "Cannot delete: project code is in use by reports",
+                                }
+                            ),
+                            400,
+                        )
         elif config["config_type"] == "name_of_work":
             ref = execute_query(
                 """
@@ -1508,10 +1590,10 @@ def _get_previous_month(month_value: str, year: int):
     return prev_month_name, prev_year
 
 
-def _check_unapproved_reports_before(month: str, year: int, exclude_report_id: int = None):
+def _check_unapproved_reports_before(month: str, year: int, project_code: str, exclude_report_id: int = None):
     """
     Check if there are any unapproved reports (pending or rejected) 
-    before the given month/year. Returns True if unapproved reports exist.
+    before the given month/year for a specific project. Returns True if unapproved reports exist.
     
     This ensures cumulative calculations are accurate by preventing
     new reports when previous reports haven't been approved yet.
@@ -1519,6 +1601,7 @@ def _check_unapproved_reports_before(month: str, year: int, exclude_report_id: i
     Args:
         month: Full month name (e.g. 'January')
         year: Year (integer)
+        project_code: Project code to filter by
         exclude_report_id: Optional report ID to exclude from the check (useful for updates)
     """
     month_map = {
@@ -1541,7 +1624,7 @@ def _check_unapproved_reports_before(month: str, year: int, exclude_report_id: i
         return False
     
     try:
-        # Check for any reports before this month/year that are not approved
+        # Check for any reports before this month/year that are not approved for this project
         # We need to check all months/years before the current one
         if exclude_report_id:
             unapproved = execute_query(
@@ -1568,10 +1651,11 @@ def _check_unapproved_reports_before(month: str, year: int, exclude_report_id: i
                         END
                     ) < %s)
                 )
+                AND project_code = %s
                 AND status != 'approved'
                 AND id != %s
                 """,
-                (year, year, month_num, exclude_report_id),
+                (year, year, month_num, project_code, exclude_report_id),
                 fetch_one=True,
             )
         else:
@@ -1599,9 +1683,10 @@ def _check_unapproved_reports_before(month: str, year: int, exclude_report_id: i
                         END
                     ) < %s)
                 )
+                AND project_code = %s
                 AND status != 'approved'
                 """,
-                (year, year, month_num),
+                (year, year, month_num, project_code),
                 fetch_one=True,
             )
         return unapproved and unapproved.get("count", 0) > 0
@@ -1611,12 +1696,117 @@ def _check_unapproved_reports_before(month: str, year: int, exclude_report_id: i
         return False
 
 
+def _check_reports_after_exist(month: str, year: int, project_code: str, exclude_report_id: int = None):
+    """
+    Check if there are any reports (pending or approved) AFTER the given month/year 
+    for a specific project. Returns True if later reports exist.
+    
+    This prevents filling older months when newer months already have data,
+    which would cause discrepancy in cumulative numbers.
+    
+    Args:
+        month: Full month name (e.g. 'January')
+        year: Year (integer)
+        project_code: Project code to filter by
+        exclude_report_id: Optional report ID to exclude from the check (useful for updates)
+    """
+    month_map = {
+        "january": 1,
+        "february": 2,
+        "march": 3,
+        "april": 4,
+        "may": 5,
+        "june": 6,
+        "july": 7,
+        "august": 8,
+        "september": 9,
+        "october": 10,
+        "november": 11,
+        "december": 12,
+    }
+    
+    month_num = month_map.get(month.lower())
+    if not month_num:
+        return False
+    
+    try:
+        # Check for any reports AFTER this month/year for this project
+        if exclude_report_id:
+            later_reports = execute_query(
+                """
+                SELECT COUNT(*) AS count
+                FROM hse_reports
+                WHERE (
+                    (year > %s) OR
+                    (year = %s AND (
+                        CASE LOWER(month)
+                            WHEN 'january' THEN 1
+                            WHEN 'february' THEN 2
+                            WHEN 'march' THEN 3
+                            WHEN 'april' THEN 4
+                            WHEN 'may' THEN 5
+                            WHEN 'june' THEN 6
+                            WHEN 'july' THEN 7
+                            WHEN 'august' THEN 8
+                            WHEN 'september' THEN 9
+                            WHEN 'october' THEN 10
+                            WHEN 'november' THEN 11
+                            WHEN 'december' THEN 12
+                            ELSE 0
+                        END
+                    ) > %s)
+                )
+                AND project_code = %s
+                AND status IN ('pending', 'approved')
+                AND id != %s
+                """,
+                (year, year, month_num, project_code, exclude_report_id),
+                fetch_one=True,
+            )
+        else:
+            later_reports = execute_query(
+                """
+                SELECT COUNT(*) AS count
+                FROM hse_reports
+                WHERE (
+                    (year > %s) OR
+                    (year = %s AND (
+                        CASE LOWER(month)
+                            WHEN 'january' THEN 1
+                            WHEN 'february' THEN 2
+                            WHEN 'march' THEN 3
+                            WHEN 'april' THEN 4
+                            WHEN 'may' THEN 5
+                            WHEN 'june' THEN 6
+                            WHEN 'july' THEN 7
+                            WHEN 'august' THEN 8
+                            WHEN 'september' THEN 9
+                            WHEN 'october' THEN 10
+                            WHEN 'november' THEN 11
+                            WHEN 'december' THEN 12
+                            ELSE 0
+                        END
+                    ) > %s)
+                )
+                AND project_code = %s
+                AND status IN ('pending', 'approved')
+                """,
+                (year, year, month_num, project_code),
+                fetch_one=True,
+            )
+        return later_reports and later_reports.get("count", 0) > 0
+    except mysql.connector.Error as e:
+        print(f"Error checking later reports: {e}")
+        # On error, allow submission to avoid blocking users unnecessarily
+        return False
+
+
 @app.route("/api/hse/unapproved_before", methods=["GET"])
 @require_safety_officer
 def hse_unapproved_before():
     """
     Check if there are any unapproved (pending or rejected) reports before
-    the selected month/year for the current Safety Officer.
+    the selected month/year for a specific project.
 
     This is used to show a clear warning message on the form so that users
     can get earlier months approved to avoid discrepancies in cumulative
@@ -1633,7 +1823,10 @@ def hse_unapproved_before():
     """
     month = request.args.get("month", "").strip()
     year = request.args.get("year", "").strip()
+    project_code = request.args.get("project_code", "").strip()
 
+    if not project_code:
+        return jsonify({"error": "project_code required"}), 400
     if not month or not year:
         return jsonify({"has_unapproved": False}), 400
 
@@ -1691,6 +1884,7 @@ def hse_unapproved_before():
                     END
                 ) < %s)
             )
+            AND project_code = %s
             AND status != 'approved'
             ORDER BY year, 
                      CASE LOWER(month)
@@ -1709,7 +1903,7 @@ def hse_unapproved_before():
                         ELSE 0
                      END
             """,
-            (year_int, year_int, month_num),
+            (year_int, year_int, month_num, project_code),
             fetch_all=True,
         )
     except mysql.connector.Error as e:
@@ -1725,6 +1919,111 @@ def hse_unapproved_before():
     )
 
 
+@app.route("/api/hse/reports_after", methods=["GET"])
+@require_safety_officer
+def hse_reports_after():
+    """
+    Check if there are any reports (pending or approved) AFTER the selected 
+    month/year for a specific project. Returns the list of later reports.
+    
+    This prevents filling older months when newer months already have data,
+    which would cause discrepancy in cumulative numbers.
+    """
+    month = request.args.get("month", "").strip()
+    year = request.args.get("year", "").strip()
+    project_code = request.args.get("project_code", "").strip()
+
+    if not month or not year or not project_code:
+        return jsonify({"has_later_reports": False}), 400
+
+    # Normalize month to full month name
+    normalized_month = _normalize_month_name(month)
+    if not normalized_month:
+        return jsonify({"has_later_reports": False}), 400
+
+    try:
+        year_int = int(year)
+    except (TypeError, ValueError):
+        return jsonify({"has_later_reports": False}), 400
+
+    month_map = {
+        "january": 1,
+        "february": 2,
+        "march": 3,
+        "april": 4,
+        "may": 5,
+        "june": 6,
+        "july": 7,
+        "august": 8,
+        "september": 9,
+        "october": 10,
+        "november": 11,
+        "december": 12,
+    }
+    month_num = month_map.get(normalized_month.lower())
+    if not month_num:
+        return jsonify({"has_later_reports": False}), 400
+
+    try:
+        rows = execute_query(
+            """
+            SELECT month, year, status, report_number
+            FROM hse_reports
+            WHERE (
+                (year > %s) OR
+                (year = %s AND (
+                    CASE LOWER(month)
+                        WHEN 'january' THEN 1
+                        WHEN 'february' THEN 2
+                        WHEN 'march' THEN 3
+                        WHEN 'april' THEN 4
+                        WHEN 'may' THEN 5
+                        WHEN 'june' THEN 6
+                        WHEN 'july' THEN 7
+                        WHEN 'august' THEN 8
+                        WHEN 'september' THEN 9
+                        WHEN 'october' THEN 10
+                        WHEN 'november' THEN 11
+                        WHEN 'december' THEN 12
+                        ELSE 0
+                    END
+                ) > %s)
+            )
+            AND project_code = %s
+            AND status IN ('pending', 'approved')
+            ORDER BY year, 
+                     CASE LOWER(month)
+                        WHEN 'january' THEN 1
+                        WHEN 'february' THEN 2
+                        WHEN 'march' THEN 3
+                        WHEN 'april' THEN 4
+                        WHEN 'may' THEN 5
+                        WHEN 'june' THEN 6
+                        WHEN 'july' THEN 7
+                        WHEN 'august' THEN 8
+                        WHEN 'september' THEN 9
+                        WHEN 'october' THEN 10
+                        WHEN 'november' THEN 11
+                        WHEN 'december' THEN 12
+                        ELSE 0
+                     END
+            """,
+            (year_int, year_int, month_num, project_code),
+            fetch_all=True,
+        )
+    except mysql.connector.Error as e:
+        print(f"Error fetching later reports list: {e}")
+        return jsonify({"has_later_reports": False, "reports": []}), 500
+
+    reports = rows or []
+    return jsonify(
+        {
+            "has_later_reports": bool(reports),
+            "reports": reports,
+        }
+    )
+
+
 @app.route("/api/hse/config", methods=["GET"])
 @require_role("safety_officer", "project_manager", "admin")
 def hse_config():
@@ -1733,7 +2032,7 @@ def hse_config():
             """
             SELECT id, config_key, config_value, config_type
             FROM admin_config
-            WHERE config_type IN ('prepared_by', 'approved_by', 'contractor', 'name_of_work')
+            WHERE config_type IN ('prepared_by', 'approved_by', 'contractor', 'name_of_work', 'project')
             ORDER BY id
             """,
             fetch_all=True,
@@ -1746,6 +2045,7 @@ def hse_config():
     approved_by = []
     contractors = []
     work_names = []
+    projects = []
 
     for row in rows or []:
         if row["config_type"] in ("prepared_by", "approved_by"):
@@ -1776,6 +2076,18 @@ def hse_config():
                     "contractor_name": row["config_value"],
                 }
             )
+        elif row["config_type"] == "project":
+            try:
+                value = json.loads(row["config_value"] or "{}")
+            except (json.JSONDecodeError, TypeError):
+                value = {}
+            projects.append(
+                {
+                    "id": row["id"],
+                    "project_code": value.get("code", ""),
+                    "project_name": value.get("name", ""),
+                }
+            )
 
     return jsonify(
         {
@@ -1783,6 +2095,7 @@ def hse_config():
             "approved_by": approved_by,
             "contractors": contractors,
             "work_names": work_names,
+            "projects": projects,
         }
     )
 
@@ -1791,12 +2104,15 @@ def hse_config():
 @require_safety_officer
 def check_month_exists():
     """
-    Check if the current user already has a report for the given month/year.
+    Check if a report already exists for the given project_code and month/year.
     Returns: {exists: bool, report_id: int|null, status: str|null}
     """
     month = request.args.get("month", "").strip()
     year = request.args.get("year", "").strip()
+    project_code = request.args.get("project_code", "").strip()
     
+    if not project_code:
+        return jsonify({"error": "project_code required"}), 400
     if not month or not year:
         return jsonify({"exists": False}), 400
     
@@ -1810,19 +2126,15 @@ def check_month_exists():
     if not normalized_month:
         return jsonify({"exists": False}), 400
     
-    user_id = session.get("user_id")
-    if not user_id:
-        return jsonify({"exists": False}), 401
-    
     try:
         existing = execute_query(
             """
             SELECT id, status, report_number
             FROM hse_reports
-            WHERE prepared_by_id = %s AND month = %s AND year = %s
+            WHERE project_code = %s AND month = %s AND year = %s
             LIMIT 1
             """,
-            (user_id, normalized_month, year_int),
+            (project_code, normalized_month, year_int),
             fetch_one=True,
         )
         
@@ -1845,6 +2157,10 @@ def check_month_exists():
 def hse_previous_month():
     month = request.args.get("month", "").strip()
     year = request.args.get("year", "").strip()
+    project_code = request.args.get("project_code", "").strip()
+
+    if not project_code:
+        return jsonify({"error": "project_code is required"}), 400
 
     try:
         # If month is in 'YYYY-MM' format, prefer the embedded year.
@@ -1869,11 +2185,11 @@ def hse_previous_month():
             """
             SELECT report_data
             FROM hse_reports
-            WHERE month = %s AND year = %s AND status IN ('approved', 'pending')
+            WHERE month = %s AND year = %s AND project_code = %s AND status IN ('approved', 'pending')
             ORDER BY created_at DESC
             LIMIT 1
             """,
-            (prev_month, prev_year),
+            (prev_month, prev_year, project_code),
             fetch_one=True,
         )
     except mysql.connector.Error as e:
@@ -1922,6 +2238,7 @@ def submit_hse_report():
         "contractor_name",
         "status_date",
         "report_data",
+        "project_code",
     ]
     missing = [f for f in required_fields if not data.get(f)]
     if missing:
@@ -1943,6 +2260,32 @@ def submit_hse_report():
     status_date = data.get("status_date").strip()
     remarks = (data.get("remarks") or "").strip() or None
     current_report_data = data.get("report_data") or {}
+    project_code = data.get("project_code").strip()
+
+    # Validate project_code exists in admin_config
+    try:
+        project_exists = execute_query(
+            """
+            SELECT id FROM admin_config 
+            WHERE config_type = 'project' AND JSON_UNQUOTE(JSON_EXTRACT(config_value, '$.code')) = %s
+            LIMIT 1
+            """,
+            (project_code,),
+            fetch_one=True,
+        )
+        if not project_exists:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": f"Invalid project code: {project_code}",
+                    }
+                ),
+                400,
+            )
+    except mysql.connector.Error as e:
+        print(f"Error validating project code: {e}")
+        return jsonify({"success": False, "message": "Failed to validate project code"}), 500
 
     normalized_month = _normalize_month_name(raw_month)
     if not normalized_month:
@@ -2004,10 +2347,11 @@ def submit_hse_report():
     month_suffix = f"{month_num:02d}"
     report_number = f"OH&S-HSE-01-{year_suffix}-{month_suffix}"
     try:
-        # Check if report number already exists
+        # Check if report number already exists for this project
+        # Same report_number is allowed for different projects
         existing = execute_query(
-            "SELECT id FROM hse_reports WHERE report_number = %s",
-            (report_number,),
+            "SELECT id FROM hse_reports WHERE report_number = %s AND project_code = %s",
+            (report_number, project_code),
             fetch_one=True,
         )
         if existing:
@@ -2015,21 +2359,21 @@ def submit_hse_report():
                 jsonify(
                     {
                         "success": False,
-                        "message": "Report number already exists",
+                        "message": f"Report number already exists for project {project_code}",
                     }
                 ),
                 400,
             )
 
-        # Check if user already has a report for this month/year
+        # Check if project already has a report for this month/year
         existing_month = execute_query(
             """
             SELECT id, status, report_number
             FROM hse_reports
-            WHERE prepared_by_id = %s AND month = %s AND year = %s
+            WHERE project_code = %s AND month = %s AND year = %s
             LIMIT 1
             """,
-            (user_id, month, int(year)),
+            (project_code, month, int(year)),
             fetch_one=True,
         )
         if existing_month:
@@ -2037,19 +2381,32 @@ def submit_hse_report():
                 jsonify(
                     {
                         "success": False,
-                        "message": f"You have already submitted a report for {month} {year}. Report: {existing_month.get('report_number', 'N/A')} (Status: {existing_month.get('status', 'unknown')})",
+                        "message": f"A report for project {project_code} already exists for {month} {year}. Report: {existing_month.get('report_number', 'N/A')} (Status: {existing_month.get('status', 'unknown')})",
                     }
                 ),
                 400,
             )
 
-        # Check if there are any unapproved reports before this month/year
-        if _check_unapproved_reports_before(month, int(year)):
+        # Check if there are any unapproved reports before this month/year for this project
+        if _check_unapproved_reports_before(month, int(year), project_code):
             return (
                 jsonify(
                     {
                         "success": False,
                         "message": "Cannot submit new report: There are previous reports that are not approved yet. Please get it approved First to Avoid any Discrepancy in Cumulative Numbers.",
+                    }
+                ),
+                400,
+            )
+
+        # Check if there are any reports AFTER this month/year for this project
+        # This prevents filling older months when newer months already have data
+        if _check_reports_after_exist(month, int(year), project_code):
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Cannot submit report for this month: A report for a later month already exists for this project. Filling earlier months would cause discrepancy in Cumulative Numbers.",
                     }
                 ),
                 400,
@@ -2062,11 +2419,11 @@ def submit_hse_report():
                 """
                 SELECT report_data
                 FROM hse_reports
-                WHERE month = %s AND year = %s AND status IN ('approved', 'pending')
+                WHERE month = %s AND year = %s AND project_code = %s AND status IN ('approved', 'pending')
                 ORDER BY created_at DESC
                 LIMIT 1
                 """,
-                (prev_month, prev_year),
+                (prev_month, prev_year, project_code),
                 fetch_one=True,
             )
             if prev_row and prev_row.get("report_data"):
@@ -2083,6 +2440,7 @@ def submit_hse_report():
             """
             INSERT INTO hse_reports (
                 report_number,
+                project_code,
                 month,
                 year,
                 name_of_work,
@@ -2096,10 +2454,11 @@ def submit_hse_report():
                 approved_by_id,
                 rejection_comment
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending', NULL, NULL)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending', NULL, NULL)
             """,
             (
                 report_number,
+                project_code,
                 month,
                 year,
                 name_of_work,
@@ -2141,6 +2500,7 @@ def hse_reports_list():
             SELECT
                 r.id,
                 r.report_number,
+                r.project_code,
                 r.month,
                 r.year,
                 r.name_of_work,
@@ -2284,6 +2644,27 @@ def hse_report_download(report_id):
 
     generated_at = datetime.utcnow()
 
+    # Fetch project name from admin_config table
+    project_name = None
+    if row.get("project_code"):
+        try:
+            project_row = execute_query(
+                """
+                SELECT config_value 
+                FROM admin_config 
+                WHERE config_type = 'project' 
+                AND JSON_UNQUOTE(JSON_EXTRACT(config_value, '$.code')) = %s
+                LIMIT 1
+                """,
+                (row.get("project_code"),),
+                fetch_one=True
+            )
+            if project_row:
+                project_data = json.loads(project_row.get("config_value", "{}"))
+                project_name = project_data.get("name", "")
+        except Exception as e:
+            print(f"Error fetching project name: {e}")
+
     # Resolve absolute filesystem paths for logos so xhtml2pdf can load them
     logo_path = os.path.join(app.root_path, "static", "images", "simonindia_logo.png")
     adventz_logo_path = os.path.join(app.root_path, "static", "images", "adventz_logo.png")
@@ -2295,6 +2676,7 @@ def hse_report_download(report_id):
             prepared_by=prepared_by,
             approved_by=approved_by,
             generated_at=generated_at,
+            project_name=project_name,
             logo_path=logo_path,
             adventz_logo_path=adventz_logo_path,
         )
@@ -2376,6 +2758,7 @@ def hse_pending_reports():
             SELECT
                 r.id,
                 r.report_number,
+                r.project_code,
                 r.month,
                 r.year,
                 r.name_of_work,
@@ -2437,6 +2820,7 @@ def hse_approved_reports():
             SELECT
                 r.id,
                 r.report_number,
+                r.project_code,
                 r.month,
                 r.year,
                 r.name_of_work,
@@ -2459,6 +2843,81 @@ def hse_approved_reports():
         return jsonify({"error": "Failed to fetch approved reports"}), 500
 
     return jsonify(rows or [])
+
+
+@app.route("/api/hse/project_analytics", methods=["GET"])
+@require_project_manager
+def hse_project_analytics():
+    """
+    Fetch project-specific cumulative analytics.
+    Returns the latest approved report's cumulative values for:
+    - Total Safe Man-hours
+    - LTI Count (fatalities + other_lti)
+    - Frequency Rate
+    - Severity Rate
+    - Pending NCs
+    """
+    project_code = request.args.get("project_code", "").strip()
+
+    if not project_code:
+        return jsonify({"error": "project_code is required"}), 400
+
+    try:
+        # Fetch the latest approved report for this project
+        row = execute_query(
+            """
+            SELECT report_data, month, year, report_number
+            FROM hse_reports
+            WHERE project_code = %s AND status = 'approved'
+            ORDER BY year DESC,
+                     FIELD(month, 'January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December') DESC
+            LIMIT 1
+            """,
+            (project_code,),
+            fetch_one=True,
+        )
+    except mysql.connector.Error as e:
+        print(f"Error fetching project analytics: {e}")
+        return jsonify({"error": "Failed to fetch analytics"}), 500
+
+    if not row or not row.get("report_data"):
+        return jsonify(
+            {"has_data": False, "message": "No approved reports found for this project"}
+        )
+
+    try:
+        report_data = json.loads(row["report_data"] or "{}")
+    except (json.JSONDecodeError, TypeError):
+        return jsonify({"error": "Invalid report data"}), 500
+
+    # Extract cumulative values
+    safe_manhours = report_data.get("safe_manhours", {}).get("cumulative", 0)
+    fatalities = report_data.get("fatalities", {}).get("cumulative", 0)
+    other_lti = report_data.get("other_lti", {}).get("cumulative", 0)
+    lti_count = fatalities + other_lti
+    frequency_rate = report_data.get("frequency_rate", {}).get("cumulative", 0)
+    severity_rate = report_data.get("severity_rate", {}).get("cumulative", 0)
+    pending_ncs = report_data.get("pending_ncs", {}).get("cumulative", 0)
+
+    return jsonify(
+        {
+            "has_data": True,
+            "project_code": project_code,
+            "latest_report": {
+                "month": row.get("month"),
+                "year": row.get("year"),
+                "report_number": row.get("report_number"),
+            },
+            "metrics": {
+                "safe_manhours": safe_manhours,
+                "lti_count": lti_count,
+                "frequency_rate": frequency_rate,
+                "severity_rate": severity_rate,
+                "pending_ncs": pending_ncs,
+            },
+        }
+    )
 
 
 @app.route("/api/hse/approve/<int:report_id>", methods=["POST"])
@@ -2671,6 +3130,7 @@ def update_hse_report(report_id):
         "contractor_name",
         "status_date",
         "report_data",
+        "project_code",
     ]
     missing = [f for f in required_fields if not data.get(f)]
     if missing:
@@ -2685,11 +3145,37 @@ def update_hse_report(report_id):
         )
 
     user_id = session.get("user_id")
+    project_code = data.get("project_code").strip()
+
+    # Validate project_code exists in admin_config
+    try:
+        project_exists = execute_query(
+            """
+            SELECT id FROM admin_config 
+            WHERE config_type = 'project' AND JSON_UNQUOTE(JSON_EXTRACT(config_value, '$.code')) = %s
+            LIMIT 1
+            """,
+            (project_code,),
+            fetch_one=True,
+        )
+        if not project_exists:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": f"Invalid project code: {project_code}",
+                    }
+                ),
+                400,
+            )
+    except mysql.connector.Error as e:
+        print(f"Error validating project code: {e}")
+        return jsonify({"success": False, "message": "Failed to validate project code"}), 500
 
     try:
         existing = execute_query(
             """
-            SELECT id, prepared_by_id, status
+            SELECT id, prepared_by_id, status, project_code
             FROM hse_reports
             WHERE id = %s AND prepared_by_id = %s
             """,
@@ -2762,14 +3248,15 @@ def update_hse_report(report_id):
     month = normalized_month
 
     try:
-        # Prevent duplicate report_number for a different report.
+        # Prevent duplicate report_number for the same project (different report).
+        # Same report_number is allowed across different projects.
         conflict = execute_query(
             """
             SELECT id
             FROM hse_reports
-            WHERE report_number = %s AND id != %s
+            WHERE report_number = %s AND project_code = %s AND id != %s
             """,
-            (report_number, report_id),
+            (report_number, project_code, report_id),
             fetch_one=True,
         )
         if conflict:
@@ -2777,21 +3264,21 @@ def update_hse_report(report_id):
                 jsonify(
                     {
                         "success": False,
-                        "message": "Report number already exists",
+                        "message": f"Report number already exists for project {project_code}",
                     }
                 ),
                 400,
             )
 
-        # Check if user already has a report for this month/year (excluding current report)
+        # Check if project already has a report for this month/year (excluding current report)
         existing_month = execute_query(
             """
             SELECT id, status, report_number
             FROM hse_reports
-            WHERE prepared_by_id = %s AND month = %s AND year = %s AND id != %s
+            WHERE project_code = %s AND month = %s AND year = %s AND id != %s
             LIMIT 1
             """,
-            (user_id, month, int(year), report_id),
+            (project_code, month, int(year), report_id),
             fetch_one=True,
         )
         if existing_month:
@@ -2799,20 +3286,33 @@ def update_hse_report(report_id):
                 jsonify(
                     {
                         "success": False,
-                        "message": f"You have already submitted a report for {month} {year}. Report: {existing_month.get('report_number', 'N/A')} (Status: {existing_month.get('status', 'unknown')})",
+                        "message": f"A report for project {project_code} already exists for {month} {year}. Report: {existing_month.get('report_number', 'N/A')} (Status: {existing_month.get('status', 'unknown')})",
                     }
                 ),
                 400,
             )
 
-        # Check if there are any unapproved reports before this month/year
+        # Check if there are any unapproved reports before this month/year for this project
         # Exclude the current report from the check
-        if _check_unapproved_reports_before(month, int(year), exclude_report_id=report_id):
+        if _check_unapproved_reports_before(month, int(year), project_code, exclude_report_id=report_id):
             return (
                 jsonify(
                     {
                         "success": False,
                         "message": "Cannot update report: There are previous reports that are not approved yet. Please get it approved First to Avoid any Discrepancy in Cumulative Numbers.",
+                    }
+                ),
+                400,
+            )
+
+        # Check if there are any reports AFTER this month/year for this project
+        # Exclude the current report from the check
+        if _check_reports_after_exist(month, int(year), project_code, exclude_report_id=report_id):
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Cannot update report to this month: A report for a later month already exists for this project. Filling earlier months would cause discrepancy in Cumulative Numbers.",
                     }
                 ),
                 400,
@@ -2825,11 +3325,11 @@ def update_hse_report(report_id):
                 """
                 SELECT report_data
                 FROM hse_reports
-                WHERE month = %s AND year = %s AND status = 'approved'
+                WHERE month = %s AND year = %s AND project_code = %s AND status = 'approved'
                 ORDER BY created_at DESC
                 LIMIT 1
                 """,
-                (prev_month, prev_year),
+                (prev_month, prev_year, project_code),
                 fetch_one=True,
             )
             if prev_row and prev_row.get("report_data"):
@@ -2847,6 +3347,7 @@ def update_hse_report(report_id):
             UPDATE hse_reports
             SET
                 report_number = %s,
+                project_code = %s,
                 month = %s,
                 year = %s,
                 name_of_work = %s,
@@ -2863,6 +3364,7 @@ def update_hse_report(report_id):
             """,
             (
                 report_number,
+                project_code,
                 month,
                 year,
                 name_of_work,
@@ -2950,6 +3452,16 @@ def project_manager_review_report(report_id):
         user=user,
         report_id=report_id,
     )
+
+
+@app.route("/project_manager/analytics", methods=["GET"])
+@require_project_manager_page
+def project_manager_analytics():
+    """
+    Render the Manager Analytics page for project-specific cumulative metrics.
+    """
+    user = get_current_user()
+    return render_template("manager_analytics.html", user=user)
 
 
 # ---------------------------------------------------------------------------
