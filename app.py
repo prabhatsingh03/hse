@@ -111,7 +111,7 @@ app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_USE_SIGNER"] = True
 app.config["SESSION_FILE_DIR"] = os.path.join(
-    os.path.dirname(__file__), "flask_session"
+    os.path.dirname(__file__), "flask_session_cache"
 )
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(minutes=30)
 app.config["SESSION_COOKIE_NAME"] = "hse_session"
@@ -176,7 +176,7 @@ def is_logged_in() -> bool:
 
 def start_user_session(user: dict) -> None:
     """
-    Initialize an authenticated, permanent session for the given user.
+    Initialize an authenticated session for the given user.
     """
     session.clear()
     session["user_id"] = user["id"]
@@ -186,7 +186,7 @@ def start_user_session(user: dict) -> None:
     session["email"] = user["email"]
     session["designation"] = user.get("designation")
     session["profile_pic"] = user.get("profile_pic")
-    session.permanent = True
+    session.permanent = user.get("remember", False)
 
 
 def get_current_user():
@@ -505,9 +505,11 @@ def login():
         data = request.get_json(silent=True) or {}
         email = data.get("email", "").strip()
         password = data.get("password", "")
+        remember = data.get("remember", False)
     else:
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "")
+        remember = request.form.get("remember") == "on"
 
     if not email or not password:
         return (
@@ -543,6 +545,8 @@ def login():
             401,
         )
 
+    # Inject remember flag into user dict for session handling
+    user["remember"] = remember
     start_user_session(user)
 
     redirect_map = {
@@ -624,7 +628,7 @@ def check_role():
 @app.route("/")
 def index():
     if not is_logged_in():
-        return redirect(url_for("login"))
+        return render_template("landing.html")
 
     role = session.get("role")
     if role == "admin":
@@ -3498,5 +3502,3 @@ if __name__ == "__main__":
     os.makedirs(app.config["SESSION_FILE_DIR"], exist_ok=True)
     create_connection_pool(pool_size=10)
     app.run(debug=True, host="0.0.0.0", port=5000)
-
-

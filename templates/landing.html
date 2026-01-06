@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSE Excellence | SIMON India</title>
+    <!-- Simple Google Fonts (No external UI frameworks) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome (Allowed as "Icons") -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}">
+</head>
+
+<body>
+
+    <!-- 1. Top Navbar -->
+    <header class="navbar">
+        <div class="container navbar-content">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/simonindia_logo.png') }}" alt="Logo" class="logo-img">
+                <span class="logo-text">HSE PLATFORM</span>
+            </div>
+            <nav class="nav-links">
+                <button id="login-btn-nav" class="btn btn-primary">Login</button>
+            </nav>
+        </div>
+    </header>
+
+
+
+    <!-- 2. Hero Section -->
+    <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="hero-content container">
+            <h1 class="hero-title">Health, Safety & Environment Excellence</h1>
+            <p class="hero-subtext">Quality • Safety • Compliance Across Every Project</p>
+            <div class="hero-buttons">
+                <a href="#features" class="btn btn-lg btn-primary">Explore Platform</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2.5 Company Information (NEW) -->
+    <section id="about-company" class="company-section">
+        <div class="container company-content">
+            <div class="company-text">
+                <h2>Our Commitment to Excellence</h2>
+                <div class="divider align-left"></div>
+                <p>Our company is a trusted organization delivering quality-driven Health, Safety & Environment
+                    solutions.</p>
+                <p>We focus on safety excellence, compliance management, and operational quality across projects and
+                    industries. We combine industry expertise, structured processes, and modern technology to ensure
+                    safe, compliant, and sustainable operations.</p>
+
+                <div class="company-values">
+                    <div class="value-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Safety First</span>
+                    </div>
+                    <div class="value-item">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Quality Assurance</span>
+                    </div>
+                    <div class="value-item">
+                        <i class="fas fa-globe-asia"></i>
+                        <span>Global Compliance</span>
+                    </div>
+                </div>
+            </div>
+            <div class="company-image">
+                <img src="https://images.unsplash.com/photo-1531973576160-7125cd663d86?q=80&w=2070&auto=format&fit=crop"
+                    alt="Corporate Team">
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Visual Feature Sections (Alternating) -->
+    <div id="features" class="feature-sections">
+
+        <!-- Section 1: Project Quality Control -->
+        <section class="visual-section container">
+            <div class="visual-content">
+                <div class="icon-box bg-blue-soft">
+                    <i class="fas fa-check-double text-blue"></i>
+                </div>
+                <h2>Project Quality Control</h2>
+                <p>Ensuring standards and specifications are met with rigorous quality control processes at every stage
+                    of execution. We maintain an uncompromising stance on quality deliverables.</p>
+            </div>
+            <div class="visual-image">
+                <img src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070&auto=format&fit=crop"
+                    alt="Quality Control">
+            </div>
+        </section>
+
+        <!-- Section 2: Health & Safety Monitoring -->
+        <section class="visual-section container reverse">
+            <div class="visual-content">
+                <div class="icon-box bg-green-soft">
+                    <i class="fas fa-shield-alt text-green"></i>
+                </div>
+                <h2>Health & Safety Monitoring</h2>
+                <p>Prioritizing the well-being of our workforce through comprehensive risk assessments, real-time safety
+                    tracking, and proactive hazard management protocols.</p>
+            </div>
+            <div class="visual-image">
+                <img src="https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?q=80&w=2070&auto=format&fit=crop"
+                    alt="Safety Monitoring">
+            </div>
+        </section>
+
+        <!-- Section 3: Environmental Compliance -->
+        <section class="visual-section container">
+            <div class="visual-content">
+                <div class="icon-box bg-teal-soft">
+                    <i class="fas fa-leaf text-teal"></i>
+                </div>
+                <h2>Environmental Compliance</h2>
+                <p>Sustainable practices that minimize ecological impact. We strictly adhere to all environmental
+                    regulations, ensuring our projects leave a positive footprint.</p>
+            </div>
+            <div class="visual-image">
+                <img src="https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?q=80&w=2070&auto=format&fit=crop"
+                    alt="Environmental Compliance">
+            </div>
+        </section>
+
+        <!-- Section 4: Risk Management -->
+        <section class="visual-section container reverse">
+            <div class="visual-content">
+                <div class="icon-box bg-orange-soft">
+                    <i class="fas fa-exclamation-triangle text-orange"></i>
+                </div>
+                <h2>Risk & Incident Management</h2>
+                <p>Advanced incident reporting and root cause analysis tools to prevent recurrence. A proactive approach
+                    to identifying and mitigating risks before they escalate.</p>
+            </div>
+            <div class="visual-image">
+                <img src="https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?q=80&w=2070&auto=format&fit=crop"
+                    alt="Risk Management">
+            </div>
+        </section>
+
+    </div>
+
+    <!-- 4. Feature Cards Grid -->
+    <section class="grid-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Comprehensive HSE Management</h2>
+                <div class="divider"></div>
+            </div>
+            <div class="cards-grid">
+                <!-- Card 1 -->
+                <div class="info-card">
+                    <i class="fas fa-file-contract"></i>
+                    <h3>Incident Reporting</h3>
+                    <p>Streamlined workflows for reporting and tracking work-site incidents immediately.</p>
+                </div>
+                <!-- Card 2 -->
+                <div class="info-card">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h3>Audit & Inspection</h3>
+                    <p>Digital tools to conduct thorough safety audits and inspections seamlessly.</p>
+                </div>
+                <!-- Card 3 -->
+                <div class="info-card">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>Safety Documentation</h3>
+                    <p>Centralized repository for all safety manuals, guidelines, and compliance docs.</p>
+                </div>
+                <!-- Card 4 -->
+                <div class="info-card">
+                    <i class="fas fa-tasks"></i>
+                    <h3>Compliance Tracking</h3>
+                    <p>Monitor adherence to local and international safety regulations in real-time.</p>
+                </div>
+                <!-- Card 5 -->
+                <div class="info-card">
+                    <i class="fas fa-chart-pie"></i>
+                    <h3>Analytics & Dashboards</h3>
+                    <p>Visual insights into safety performance, trends, and areas for improvement.</p>
+                </div>
+                <!-- Card 6 -->
+                <div class="info-card">
+                    <i class="fas fa-broadcast-tower"></i>
+                    <h3>Real-time Monitoring</h3>
+                    <p>Keep a pulse on site activities with live feeds and status updates.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. Trust / Professional Section -->
+    <section id="about" class="trust-section">
+        <div class="container">
+            <div class="trust-grid">
+                <div class="trust-item">
+                    <h3>Compliance Driven</h3>
+                    <p>We meet and exceed global safety standards to ensure operational excellence.</p>
+                </div>
+                <div class="trust-item">
+                    <h3>Safety First Approach</h3>
+                    <p>Every decision is guided by our commitment to the safety of our people.</p>
+                </div>
+                <div class="trust-item">
+                    <h3>Enterprise-Grade Reporting</h3>
+                    <p>Reliable, data-driven reporting that powers informed decision making.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. Footer -->
+    <footer id="contact">
+        <div class="container footer-content">
+            <div class="footer-left">
+                <img src="{{ url_for('static', filename='images/simonindia_logo.png') }}" alt="Simon India Logo"
+                    style="height: 50px; margin-bottom: 15px; display: block;">
+                <strong>SIMON India Limited</strong>
+                <p>Building safer workplaces through innovation and commitment.</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">Contact Support</a>
+            </div>
+            <div class="footer-right">
+                <p>&copy; 2024 Simon India. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- STEP 2: LOGIN MODAL (Pro 2-Column) -->
+    <div id="login-modal" class="modal-backdrop hidden">
+        <div class="modal-content two-column-modal">
+            <button id="close-modal" class="close-btn">&times;</button>
+
+            <!-- Left Side: Visuals -->
+            <div class="modal-image-side">
+                <!-- Slider Background -->
+                <div class="modal-slider-wrapper">
+                    <div class="modal-slider-track">
+                        <!-- Set 1 -->
+                        <div class="modal-slide">
+                            <img src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=2070&auto=format&fit=crop"
+                                alt="Safety">
+                        </div>
+                        <div class="modal-slide">
+                            <img src="https://images.unsplash.com/photo-1565008447742-97f6f38c985c?q=80&w=2070&auto=format&fit=crop"
+                                alt="Industrial">
+                        </div>
+                        <div class="modal-slide">
+                            <img src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2070&auto=format&fit=crop"
+                                alt="Construction">
+                        </div>
+                        <div class="modal-slide">
+                            <img src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070&auto=format&fit=crop"
+                                alt="Quality">
+                        </div>
+                        <!-- Set 2 (Duplicate) -->
+                        <div class="modal-slide">
+                            <img src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?q=80&w=2070&auto=format&fit=crop"
+                                alt="Safety">
+                        </div>
+                        <div class="modal-slide">
+                            <img src="https://images.unsplash.com/photo-1565008447742-97f6f38c985c?q=80&w=2070&auto=format&fit=crop"
+                                alt="Industrial">
+                        </div>
+                        <div class="modal-slide">
+                            <img src="https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2070&auto=format&fit=crop"
+                                alt="Construction">
+                        </div>
+                        <div class="modal-slide">
+                            <img src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=2070&auto=format&fit=crop"
+                                alt="Quality">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-overlay-text">
+                    <h3>HSE Excellence</h3>
+                    <p>Quality • Safety • Compliance</p>
+                </div>
+            </div>
+
+            <!-- Right Side: Form -->
+            <div class="modal-form-side">
+                <div class="modal-header">
+                    <img src="{{ url_for('static', filename='images/simonindia_logo.png') }}" alt="Logo"
+                        class="modal-logo">
+                    <h3>Welcome Back</h3>
+                    <p>Sign in to your account</p>
+                </div>
+
+                <div id="error-message" class="error-box hidden"></div>
+
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required placeholder="name@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="password-wrapper" style="position: relative;">
+                            <input type="password" id="password" name="password" required placeholder="••••••••">
+                            <button type="button" id="toggle-password" class="password-toggle"
+                                style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #64748b;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-actions" style="justify-content: flex-start; align-items: center;">
+                        <input type="checkbox" id="remember-me" name="remember" style="width: auto; margin-right: 8px;">
+                        <label for="remember-me"
+                            style="margin-bottom: 0; font-weight: 500; font-size: 0.9rem; color: var(--text-muted); cursor: pointer;">Remember
+                            Me</label>
+                    </div>
+
+                    <button type="submit" class="btn btn-full btn-primary" id="submit-btn">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Minimal Vanilla JS -->
+    <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+</body>
+
+</html>
+```
